@@ -84,3 +84,6 @@ body{
   .lead h1{font-size:20px}
   .card{padding:16px}
 }
+
+.footer{position:fixed;left:12px;right:12px;bottom:12px;display:flex;justify-content:flex-end;z-index:60}
+.version{background:rgba(255,255,255,0.02);padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);color:var(--muted);font-size:13px}
