@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>The Button</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <div class="hud">
+      <div class="counter">Presses: <span id="count">0</span></div>
+      <div id="achievements" class="achievements"></div>
+    </div>
+
+    <div class="center">
+      <button id="big-button" class="big-button">PRESS</button>
+      <div id="messages" class="messages"></div>
+    </div>
+
+    <div id="lore" class="lore"></div>
+
+    <!-- Overlays / modals -->
+    <div id="overlay" class="overlay hidden"></div>
+    <div id="modal" class="modal hidden"></div>
+
+    <!-- lightweight boss / events containers -->
+    <canvas id="dvd-canvas" class="dvd hidden"></canvas>
+    <div id="confetti" class="confetti hidden">🎉</div>
+  </div>
+
+  <script src="script.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+Create a single-page website called "The Button" that looks polished, modern, and slightly mysterious.
+The homepage contains one giant circular button in the center of the screen labeled "PRESS". The design should feel like a mix between a playful game, an internet mystery, and a tech startup landing page.
+Core Features:
+Every button press increments a visible counter.
+The background smoothly changes color on each press.
+Random funny messages appear after each click.
+Messages should be sarcastic, absurd, and internet-humor style.
+The site remembers each visitor's click count using local storage.
+Achievements:
+Unlock achievements at certain click milestones.
+Examples:
+10 clicks: "No Self Control"
+50 clicks: "Professional Button Enjoyer"
+100 clicks: "One With The Button"
+500 clicks: "Concerning Levels of Dedication"
+Secret Lore:
+Every 25 clicks reveal a ridiculous lore entry about the origins of the button.
+The lore should be intentionally absurd and contradictory.
+Example:
+"The Button was discovered after the Great Cheese Incident of 1987."
+"The Button predates civilization by at least three Tuesdays."
+Spam Click Detection:
+Detect if a user clicks 10 times within 6 seconds.
+Trigger a random "Secret Reward" event.
+Possible Secret Reward Events:
+DVD Logo Mode
+The screen transforms into a bouncing DVD logo animation for 10 seconds.
+Fake Windows Update
+Display a realistic update screen.
+Progress slowly climbs to 99%.
+Final message: "Update failed successfully."
+Goose Mode
+A cartoon goose appears.
+Message: "HONK. The Button has been confiscated."
+The main button temporarily disappears.
+Potato CAPTCHA
+Present a fake CAPTCHA.
+Questions: "Are you a potato?" "Select all images containing potatoes."
+All outcomes fail.
+Final message: "Verification failed. Potential potato detected."
+Teleporting Button
+The button moves to random locations whenever the user tries to click it.
+After enough failed attempts: "Achievement Unlocked: Absolutely Bamboozled."
+Fake Incoming Call
+Show a phone call popup.
+Caller: Mom
+Buttons: Answer / Decline
+Regardless of choice: "Voicemail: Stop pressing that button."
+Alien Contact
+Display a UFO communication interface.
+Random alien messages.
+Ends with: "Signal lost. Aliens pressed the button too."
+Jackpot Event
+Extremely rare.
+Confetti animation.
+Message: "Congratulations! You won absolutely nothing."
+Button Prime Boss Fight:
+Unlock after 50 total presses.
+Button transforms into a boss with a health bar.
+Clicking deals random damage.
+Defeating Button Prime awards: "Slight Sense of Accomplishment"
+Global Feeling:
+The website should start normal but become increasingly strange and self-aware as users continue pressing.
+By 500+ presses, the website should actively question the user's life choices.
+By 1000+ presses, trigger a fake system crash or blue-screen sequence that eventually reveals: "Error: User would not stop pressing button."
+Style Requirements:
+Smooth animations.
+Responsive mobile-friendly design.
+Modern glassmorphism and neon effects.
+Sound effects optional.
+Fast loading.
+No external dependencies unless necessary.
+The overall experience should feel like a secret internet game that rewards curiosity and persistence.
