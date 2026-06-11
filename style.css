@@ -45,6 +45,15 @@ body{
 .controls{display:flex;gap:12px;justify-content:center;margin-top:14px}
 
 .panel{width:320px;max-width:36vw;height:72vh;display:flex;align-items:center}
+.panel.hidden{display:none}
+
+/* when body.panel-open is set, ensure panel is visible and animate */
+body.panel-open .panel{display:flex;animation:slideIn 260ms ease;}
+@keyframes slideIn{from{transform:translateX(12px);opacity:0}to{transform:none;opacity:1}}
+
+/* Boss modal centering override */
+.modal.boss{display:flex;align-items:center;justify-content:center}
+.modal.boss .modal-card{max-width:640px;width:94vw}
 .side-card{width:100%;padding:18px;overflow:auto}
 .side-card h3{margin-top:0}
 .global-stats{list-style:none;padding:0;margin:0 0 12px 0;color:var(--muted)}

@@ -285,7 +285,7 @@
 
   function prankBossFight(){
     // Improved boss fight overlay: centered and uses event listener
-    const modal = document.createElement('div'); modal.className='modal'; modal.style.zIndex = 2000;
+    const modal = document.createElement('div'); modal.className='modal boss'; modal.style.zIndex = 9999; modal.style.position='fixed'; modal.style.inset='0';
     const card = document.createElement('div'); card.className='modal-card glass';
     let hp = 100;
     card.innerHTML = `
@@ -359,17 +359,10 @@
 
   qs('#achievements-toggle').onclick = ()=>{ qs('#achievements-panel').classList.toggle('hidden'); };
   qs('#lore-toggle').onclick = ()=>{ qs('#lore-panel').classList.toggle('hidden'); };
-  // Stats button toggles the side panel
+  // Stats button toggles the side panel (use body.panel-open for consistent behavior)
   const openStatsBtn = qs('#open-stats');
   if(openStatsBtn){
-    openStatsBtn.addEventListener('click', ()=>{
-      if(sidePanel){
-        sidePanel.classList.toggle('hidden');
-        // make focusable for accessibility and move focus
-        sidePanel.setAttribute('tabindex','-1');
-        sidePanel.focus();
-      }
-    });
+  openStatsBtn.addEventListener('click', ()=>{ window.location.href = 'stats.html'; });
   }
 
   // --- Fake global stats (stored in localStorage too) ---
