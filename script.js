@@ -34,6 +34,7 @@
   const STORAGE_KEY = 'the-button-presses-v1';
   let count = Number(localStorage.getItem(STORAGE_KEY) || 0);
   let clickTimestamps = [];
+  let secretCooldown = false; // prevent back-to-back secret rewards
   let loreIndex = Math.floor(count / 25);
   let bossUnlocked = count >= 50;
 
@@ -58,6 +59,12 @@
     btn.addEventListener('click', onPress);
     // teleporting behavior: sometimes evade pointer
     btn.addEventListener('mouseenter', maybeTeleport);
+    // keyboard accessibility: space/enter to press when focused
+    document.addEventListener('keydown', (ev)=>{
+      if (document.activeElement === btn && (ev.code === 'Space' || ev.code === 'Enter')){
+        ev.preventDefault(); btn.click();
+      }
+    });
   }
 
   function updateCountUI(){
@@ -72,7 +79,8 @@
     // track spam click timestamps
     const now = Date.now();
     clickTimestamps.push(now);
-    clickTimestamps = clickTimestamps.filter(t=> now - t <= 6000);
+    // keep only recent timestamps within the last 6s and limit array size
+    clickTimestamps = clickTimestamps.filter(t=> now - t <= 6000).slice(-64);
 
     if (clickTimestamps.length >= 10){
       // trigger secret reward
@@ -175,11 +183,14 @@
 
   // --- Secret rewards ---
   function triggerRandomReward(){
-    const REWARDS = [dvdLogoMode, fakeWindowsUpdate, gooseMode, potatoCaptcha, teleportingButton, fakeCall, alienContact, jackpotEvent];
-    // rare jackpot (1%)
-    if (Math.random() < 0.01) return jackpotEvent();
-    const r = REWARDS[Math.floor(Math.random()*REWARDS.length)];
-    r();
+  if (secretCooldown) return; // avoid immediate retrigger
+  secretCooldown = true;
+  setTimeout(()=>{ secretCooldown=false; }, 8000);
+  const REWARDS = [dvdLogoMode, fakeWindowsUpdate, gooseMode, potatoCaptcha, teleportingButton, fakeCall, alienContact, jackpotEvent];
+  // rare jackpot (1%)
+  if (Math.random() < 0.01) return jackpotEvent();
+  const r = REWARDS[Math.floor(Math.random()*REWARDS.length)];
+  r();
   }
 
   // DVD Logo Mode
@@ -215,9 +226,12 @@
 
   // goose mode
   function gooseMode(){
+    // Keep button present; overlay the goose and message briefly
     overlay.classList.remove('hidden'); modal.classList.remove('hidden');
-    modal.innerHTML = `<div style='text-align:center'><img src='data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="160" height="120"><text x="0" y="20" fill="white">🪿</text></svg>' alt='goose' style='font-size:48px'><h3>HONK. The Button has been confiscated.</h3></div>`;
-    btn.classList.add('hidden'); setTimeout(()=>{ btn.classList.remove('hidden'); modal.classList.add('hidden'); overlay.classList.add('hidden'); },5000);
+    modal.innerHTML = `<div style='text-align:center'><div style='font-size:64px'>🪿</div><h3>HONK. The Button has been temporarily detained.</h3></div>`;
+    const bo = document.getElementById('button-overlay');
+    if (bo){ bo.classList.remove('hidden'); bo.textContent = 'HONK'; }
+    setTimeout(()=>{ if (bo){ bo.classList.add('hidden'); bo.textContent=''; } modal.classList.add('hidden'); overlay.classList.add('hidden'); },5000);
   }
 
   // potato captcha
@@ -227,27 +241,28 @@
     setTimeout(()=>{ modal.classList.add('hidden'); overlay.classList.add('hidden'); },4200);
   }
 
-  // teleporting button
-  let teleportAttempts = 0;
+  // teleporting button (reworked)
+  // The button will never permanently move; instead we shake it and show an overlay hint.
+  let evadeAttempts = 0;
   function maybeTeleport(){
-    // random small chance to teleport on hover increasing with attempts
-    if (Math.random() < 0.18 + teleportAttempts*0.02){
-      teleportButton(); teleportAttempts++;
+    if (Math.random() < 0.18 + evadeAttempts*0.02){
+      evadeButton(); evadeAttempts++;
     }
   }
-  function teleportButton(){
-    const rX = Math.random()*70 + 15; const rY = Math.random()*60 + 20;
-    btn.style.position = 'absolute';
-    btn.style.left = rX + '%'; btn.style.top = rY + '%';
-    setTimeout(()=>{ btn.style.position=''; btn.style.left=''; btn.style.top=''; },3000);
-    if (teleportAttempts > 6){ showModal('Achievement Unlocked', 'Absolutely Bamboozled'); }
+  function evadeButton(){
+    const wrap = btn.closest('.button-wrap');
+    if (!wrap) return;
+    wrap.classList.add('shake');
+    const bo = document.getElementById('button-overlay');
+    if (bo){ bo.classList.remove('hidden'); bo.textContent = 'NOPE'; }
+    setTimeout(()=>{ if (bo){ bo.classList.add('hidden'); bo.textContent=''; } wrap.classList.remove('shake'); }, 700);
+    if (evadeAttempts > 6){ showModal('Achievement Unlocked', 'Absolutely Bamboozled'); }
   }
 
   function teleportingButton(){
-    // make it dodge for a short while
-    const dodgeFor = 7000; btn.removeEventListener('mouseenter', maybeTeleport);
-    const handler = ()=> teleportButton(); btn.addEventListener('mouseenter', handler);
-    setTimeout(()=>{ btn.removeEventListener('mouseenter', handler); btn.addEventListener('mouseenter', maybeTeleport); }, dodgeFor);
+    // temporarily increase chances and show playful dodge for a short period
+    const prev = evadeAttempts; evadeAttempts = Math.max(evadeAttempts, 3);
+    setTimeout(()=>{ evadeAttempts = prev; }, 7000);
   }
 
   // fake incoming call
