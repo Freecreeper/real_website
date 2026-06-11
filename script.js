@@ -111,6 +111,8 @@
         state.achievements.push(a.id);
         toast(`Achievement unlocked: ${a.title}`);
         showAchievementPopup(a.title);
+  // report achievement to global stats
+  postEvent('achievement', 1);
       }
     }
   }
@@ -156,18 +158,24 @@
     if(choice==='rickroll' && Math.random()>0.01) return; // very rare
     if(choice==='bossFight' && state.presses<50) return; // unlock later
     runPrank(choice);
-    qs('#stat-pranks').textContent = state.pranks;
+  qs('#stat-pranks').textContent = state.pranks;
+  // post event to server where appropriate
+  const mapping = { goose:'goose', potato:'potato', rickroll:'rickroll', alien:'alien', bossFight:'button_prime' };
+  if(mapping[choice]) postEvent(mapping[choice], 1);
   }
 
   // update global presses stored in localStorage
   function updateGlobalPresses(delta=1){
-    const k='thebutton:global';
-    try{
-      const g = JSON.parse(localStorage.getItem(k)) || {visitors:1,presses:0,goose:0,potato:0,pranks:0};
-      g.presses = (g.presses||0) + delta;
-      localStorage.setItem(k,JSON.stringify(g));
-      const el = qs('#stat-world-presses'); if(el) el.textContent = g.presses;
-    }catch(e){console.warn('global update err',e)}
+    // attempt to post to server; fallback to localStorage
+    postPress(delta).catch(()=>{
+      const k='thebutton:global';
+      try{
+        const g = JSON.parse(localStorage.getItem(k)) || {visitors:1,presses:0,goose:0,potato:0,pranks:0};
+        g.presses = (g.presses||0) + delta;
+        localStorage.setItem(k,JSON.stringify(g));
+        const el = qs('#stat-world-presses'); if(el) el.textContent = g.presses;
+      }catch(e){console.warn('global update err',e)}
+    });
   }
 
   function runPrank(name){
@@ -281,6 +289,8 @@
     const card = document.createElement('div'); card.className='modal-card glass';
     card.innerHTML=`<h3>Secret Content</h3><iframe width='560' height='315' src='https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1' title='YouTube video' frameborder='0' allow='autoplay; encrypted-media' allowfullscreen style='width:100%;height:240px;border-radius:8px'></iframe>`;
     modal.appendChild(card); document.body.appendChild(modal);
+  // report a rare rickroll victim
+  postEvent('rickroll',1);
   }
 
   function prankBossFight(){
@@ -296,7 +306,7 @@
       <p class='muted'>Click the button to damage the boss.</p>`;
     modal.appendChild(card); document.body.appendChild(modal);
     const hpBar = card.querySelector('#boss-hp'); hpBar.style.width = hp + '%';
-    function damage(){ hp -= rand(6,14); if(hp<0) hp=0; hpBar.style.width = (hp) + '%'; if(hp<=0){ toast('Slight Sense of Accomplishment'); document.body.removeChild(modal); removeListener(); } }
+  function damage(){ hp -= rand(6,14); if(hp<0) hp=0; hpBar.style.width = (hp) + '%'; if(hp<=0){ toast('Slight Sense of Accomplishment'); try{ postEvent('button_prime',1); }catch(e){} document.body.removeChild(modal); removeListener(); } }
     // add temporary click listener to the button
     function bossClickHandler(){ state.presses++; save(); render(); damage(); checkAchievements(); updateGlobalPresses(1); }
     btn.addEventListener('click', bossClickHandler);
@@ -392,6 +402,64 @@
     const el = qs('#version-display'); if(!el) return; el.textContent = 'v' + (v.version || '0.0.0');
     el.addEventListener('click', ()=>{ toast(`Version ${v.version} — build ${v.build}`); });
   }).catch(()=>{});
+
+  // --- Global stats (Flask API) integration ---
+  const API_BASE = '';// relative path assumes same host (serve Flask alongside static files)
+
+  async function postVisit(){
+    try{ await fetch(API_BASE + '/api/visit', {method:'POST'}); }catch(e){/*silent fallback*/}
+  }
+
+  async function postPress(delta=1){
+    try{ await fetch(API_BASE + '/api/press', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({delta})}); }catch(e){/*fallback handled in updateGlobalPresses*/}
+  }
+
+  async function postEvent(type, delta=1){
+    try{ await fetch(API_BASE + '/api/event', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type,delta})}); }catch(e){/*silent*/}
+  }
+
+  // call visit once on load
+  postVisit();
+
+  // auto-refresh global stats and animate numbers
+  let globalRefreshTimer = null;
+  async function fetchGlobalStats(){
+    try{
+      const res = await fetch(API_BASE + '/api/stats');
+      if(!res.ok) throw new Error('noapi');
+      const data = await res.json();
+      // map keys
+      const map = {
+        total_visitors: 'g_total_visitors',
+        total_presses: 'g_total_presses',
+        gooses_released: 'g_gooses_released',
+        potatoes_detected: 'g_potatoes_detected',
+        government_investigations: 'g_government_investigations',
+        button_prime_defeats: 'g_button_prime_defeats',
+        rickroll_victims: 'g_rickroll_victims',
+        alien_contacts: 'g_alien_contacts',
+        achievement_unlocks: 'g_achievement_unlocks'
+      };
+      for(const k in map){
+        const el = qs('#' + map[k]); if(!el) continue;
+        animateNumber(el, Number(data[k] || 0));
+      }
+      // show panel if hidden briefly to indicate live data available
+      const panel = qs('#global-stats-panel'); if(panel && panel.classList.contains('hidden')){ panel.classList.remove('hidden'); }
+    }catch(e){ /* ignore */ }
+  }
+
+  function animateNumber(el, to){
+    const from = Number(el.textContent.replace(/[^0-9]/g,'')) || 0;
+    if(from === to) return; const start = performance.now(); const dur = 600; function step(now){ const t = Math.min(1, (now-start)/dur); const v = Math.round(from + (to-from)*t); el.textContent = v; el.classList.add('num-animate'); if(t<1) requestAnimationFrame(step); else { setTimeout(()=>el.classList.remove('num-animate'), 420); } } requestAnimationFrame(step);
+  }
+
+  // start periodic refresh
+  fetchGlobalStats(); globalRefreshTimer = setInterval(fetchGlobalStats, 30000);
+
+  // manual refresh/close handlers
+  const refreshBtn = qs('#refresh-global'); if(refreshBtn) refreshBtn.addEventListener('click', fetchGlobalStats);
+  const closeBtn = qs('#close-global'); if(closeBtn) closeBtn.addEventListener('click', ()=>{ const p=qs('#global-stats-panel'); if(p) p.classList.add('hidden'); });
 
   // show onboard if first time
   if(!localStorage.getItem(STORAGE_KEY)){

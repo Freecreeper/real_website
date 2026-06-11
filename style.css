@@ -96,3 +96,9 @@ body.panel-open .panel{display:flex;animation:slideIn 260ms ease;}
 
 .footer{position:fixed;left:12px;right:12px;bottom:12px;display:flex;justify-content:flex-end;z-index:60}
 .version{background:rgba(255,255,255,0.02);padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);color:var(--muted);font-size:13px}
+
+/* Global statistics floating panel */
+#global-stats-panel{backdrop-filter:blur(8px);border:1px solid var(--glass-border);padding:14px;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.6)}
+#global-stats-panel ul{list-style:none;margin:0;padding:0}
+#global-stats-panel li{padding:8px 4px;border-bottom:1px solid rgba(255,255,255,0.02);display:flex;justify-content:space-between}
+.num-animate{transition:all 420ms cubic-bezier(.2,.9,.2,1);transform-origin:right center}

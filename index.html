@@ -66,6 +66,25 @@
           </div>
         </div>
       </aside>
+      <!-- Dedicated Global Statistics Panel (filled via JS) -->
+      <div id="global-stats-panel" class="glass hidden" style="position:fixed;right:20px;top:80px;width:320px;z-index:70;max-height:70vh;overflow:auto;">
+        <h3 style="margin-top:0">🌎 Global Statistics</h3>
+        <ul id="global-stats-live" class="global-stats" style="margin:0;padding:0 8px 8px 0;">
+          <li>Total Visitors: <span id="g_total_visitors">0</span></li>
+          <li>Total Button Presses: <span id="g_total_presses">0</span></li>
+          <li>Gooses Released: <span id="g_gooses_released">0</span></li>
+          <li>Potatoes Detected: <span id="g_potatoes_detected">0</span></li>
+          <li>Government Investigations: <span id="g_government_investigations">0</span></li>
+          <li>Button Prime Defeats: <span id="g_button_prime_defeats">0</span></li>
+          <li>Rickroll Victims: <span id="g_rickroll_victims">0</span></li>
+          <li>Alien Contacts: <span id="g_alien_contacts">0</span></li>
+          <li>Achievement Unlocks: <span id="g_achievement_unlocks">0</span></li>
+        </ul>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;">
+          <button id="refresh-global" class="pill">Refresh</button>
+          <button id="close-global" class="pill">Close</button>
+        </div>
+      </div>
     </main>
 
     <div id="toast-area" aria-live="polite"></div>
