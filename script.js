@@ -429,3 +429,21 @@ function triggerBlueScreen(){
   hideOverlay();
   showModal(':(', '<div style="font-family:monospace;color:#d8eaff;background:#041d36;padding:18px;border-radius:14px;">Critical Error: User would not stop pressing button.</div>', 4200);
 }
+
+// Initialize on DOM ready with error reporting and a minimal fallback
+document.addEventListener('DOMContentLoaded', ()=>{
+  try{
+    init();
+  }catch(err){
+    console.error('The Button initialization failed:', err);
+    const fallbackBtn = document.getElementById('big-button');
+    const el = document.getElementById('count');
+    if(fallbackBtn && el){
+      fallbackBtn.addEventListener('click', ()=>{
+        let c = Number(localStorage.getItem(STORAGE_KEY) || 0) + 1;
+        localStorage.setItem(STORAGE_KEY, c);
+        el.textContent = c;
+      });
+    }
+  }
+});
