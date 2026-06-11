@@ -224,11 +224,14 @@
     const modal = document.createElement('div'); modal.className='modal';
     const card = document.createElement('div'); card.className='modal-card glass';
     card.innerHTML = `<h3>Potential Potato CAPTCHA</h3><p class='muted'>Please confirm you are not a potato.</p>
-      <div style='display:flex;gap:8px;justify-content:center;margin-top:10px'><button class='pill'>I am human</button><button class='pill'>I am a goat</button></div>
+      <div style='display:flex;gap:8px;justify-content:center;margin-top:10px'><button id='potato-human' class='pill'>I am human</button><button id='potato-goat' class='pill'>I am a goat</button></div>
       <p class='muted' style='text-align:center;margin-top:12px'>Potential potato detected.</p>`;
     modal.appendChild(card); document.body.appendChild(modal);
-    setTimeout(()=>{qs('#stat-potato').textContent = Number(qs('#stat-potato').textContent||0) + 1;},400);
-    setTimeout(()=>modal.remove(),2600);
+    // wait for user interaction; increment stat when they click either
+    const human = card.querySelector('#potato-human');
+    const goat = card.querySelector('#potato-goat');
+    function finish(){ qs('#stat-potato').textContent = Number(qs('#stat-potato').textContent||0) + 1; modal.remove(); }
+    human.onclick = finish; goat.onclick = finish;
   }
 
   function prankTeleport(){
@@ -299,10 +302,23 @@
   acceptOnboard.onclick = ()=>{
     const tag = gamerTagInput.value.trim() || 'Traveler';
     state.gamerTag = tag; state.humor = humorToggle.checked; onboard.style.display='none'; save(); render();
-    if(state.humor && Notification && Notification.permission!=='granted'){
-      Notification.requestPermission().then(p=>{ if(p==='granted') toast('Notifications enabled — occasional surprises may follow.'); });
+    if(state.humor && 'Notification' in window){
+      if(Notification.permission === 'default'){
+        Notification.requestPermission().then(p=>{ if(p==='granted'){ toast('Notifications enabled — occasional surprises may follow.'); new Notification('Department of Button Affairs', {body:'Thank you. Occasional notices may appear.'}); scheduleSampleNotification(); } else { toast('Notifications denied. Humor mode continues silently.'); } });
+      } else if(Notification.permission === 'granted'){
+        toast('Notifications already enabled.'); new Notification('Department of Button Affairs', {body:'You will receive rare, funny notifications.'}); scheduleSampleNotification();
+      } else {
+        toast('Notifications denied previously. You can enable them in browser settings.');
+      }
     }
   };
+
+  function scheduleSampleNotification(){
+    // schedule one rare in-page notification after a short delay to showcase capability
+    setTimeout(()=>{
+      if(Notification.permission==='granted') new Notification('🚨 Goose Alert', {body:'A goose may be nearby.'});
+    }, 8000 + rand(0,8000));
+  }
 
   // quick reset
   qs('#reset').onclick = ()=>{ if(confirm('Reset local progress?')){ localStorage.removeItem(STORAGE_KEY); location.reload(); } };
@@ -337,67 +353,7 @@
   }
 
 })();
-const STORAGE_KEY = 'the-button-presses-v1';
-const MESSAGES = [
-  'Nice. You are still here.',
-  'The Button says hello.',
-  'Press more. The Button lives for this.',
-  'Please stop doing this, but keep pressing.',
-  'Every click is one more pixel of meaning.',
-  'Achievement unlocked: Mild Curiosity.',
-  'No refunds. This is fine.',
-  'You have already met the Button. Again.',
-  'The internet is watching your finger.',
-  'This is not a drill. This is a button.'
-];
 
-// generate more messages programmatically to reach hundreds
-for(let i=0;i<200;i++){
-  MESSAGES.push(`Random observation #${i+1}: The Button hums.`);
-}
-
-const ACHIEVEMENTS = [
-  {count:10, label:'No Self Control'},
-  {count:50, label:'Professional Button Enjoyer'},
-  {count:100, label:'One With The Button'},
-  {count:500, label:'Concerning Levels of Dedication'}
-];
-
-const LORE = [
-  'The Button was discovered after the Great Cheese Incident of 1987.',
-  'The Button predates civilization by at least three Tuesdays.',
-  'A secret society of librarians once tried to publish it.',
-  'It hums softly when you are not looking.',
-  'A failed toaster and a comet had a baby; the Button is that baby.',
-  'It was rented, not owned.'
-];
-
-// generate 100 more absurd lore entries
-for(let i=0;i<120;i++){
-  LORE.push(`Lore Entry ${i+1}: According to unverified sources, the Button once declined to be pressed on Thursdays.`);
-}
-
-const elements = {
-  count: document.getElementById('count'),
-  achievements: document.getElementById('achievements'),
-  bigButton: document.getElementById('big-button'),
-  messages: document.getElementById('messages'),
-  lore: document.getElementById('lore'),
-  overlay: document.getElementById('overlay'),
-  modal: document.getElementById('modal'),
-  buttonOverlay: document.getElementById('button-overlay'),
-  buttonWrap: document.querySelector('.button-wrap'),
-  dvdCanvas: document.getElementById('dvd-canvas'),
-  confetti: document.getElementById('confetti')
-};
-
-let count = Number(localStorage.getItem(STORAGE_KEY) || 0);
-let timestamps = [];
-let secretCooldown = false;
-let bossUnlocked = count >= 50;
-let weirdTriggered = false;
-let activeTimers = [];
-let dvdState = null;
 let user = { name: null, humor: false };
 
 function init(){
