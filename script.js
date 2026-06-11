@@ -37,6 +37,7 @@
   let secretCooldown = false; // prevent back-to-back secret rewards
   let loreIndex = Math.floor(count / 25);
   let bossUnlocked = count >= 50;
+  let _transientTimers = [];
 
   // --- Elements ---
   const el = id => document.getElementById(id);
@@ -222,6 +223,7 @@
       pct += Math.random()*4; if (pct>=99){ clearInterval(id); setTimeout(()=>{ modal.innerHTML = `<h3>Update failed successfully.</h3><div>Try again later.</div>`; setTimeout(()=>{ modal.classList.add('hidden'); overlay.classList.add('hidden'); },3000); },800); return; }
       el('pbar').style.width = pct+'%'; el('pct').textContent = Math.floor(pct)+'%';
     }, 300);
+  _transientTimers.push(id);
   }
 
   // goose mode
@@ -242,7 +244,8 @@
   }
 
   // teleporting button (reworked)
-  // The button will never permanently move; instead we shake it and show an overlay hint.
+  const t = setTimeout(()=>{ canvas._running=false; canvas.classList.add('hidden'); }, 10000);
+  _transientTimers.push(t);
   let evadeAttempts = 0;
   function maybeTeleport(){
     if (Math.random() < 0.18 + evadeAttempts*0.02){
@@ -272,7 +275,15 @@
     el('ans').addEventListener('click', ()=>{ modal.innerHTML = '<div>Voicemail: Stop pressing that button.</div>'; setTimeout(hideModal,2400); });
     el('dec').addEventListener('click', ()=>{ modal.innerHTML = '<div>Voicemail: Stop pressing that button.</div>'; setTimeout(hideModal,2400); });
   }
-  function hideModal(){ modal.classList.add('hidden'); overlay.classList.add('hidden'); }
+  function hideModal(){ 
+    modal.classList.add('hidden'); overlay.classList.add('hidden');
+    // clear transient timers and stop dvd canvas
+    _transientTimers.forEach(id=>{ try{ clearTimeout(id); clearInterval(id); }catch(e){} });
+    _transientTimers = [];
+    if (dvdCanvas && dvdCanvas._running){ dvdCanvas._running = false; dvdCanvas.classList.add('hidden'); }
+    // ensure confetti hides
+    if (confetti){ confetti.classList.add('hidden'); confetti.textContent=''; }
+  }
 
   // alien contact
   function alienContact(){
@@ -283,8 +294,11 @@
 
   // jackpot
   function jackpotEvent(){
-    confetti.classList.remove('hidden'); confetti.textContent = '🎉 Congratulations! You won absolutely nothing.';
-    setTimeout(()=>{ confetti.classList.add('hidden'); },5000);
+  confetti.classList.remove('hidden'); confetti.textContent = '';
+  // create a lightweight confetti burst using emojis
+  const emojis = ['🎉','✨','🎊','🎈'];
+  confetti.textContent = emojis[Math.floor(Math.random()*emojis.length)] + ' Congratulations! You won absolutely nothing.';
+  setTimeout(()=>{ confetti.classList.add('hidden'); confetti.textContent=''; },5000);
   }
 
   // boss fight
