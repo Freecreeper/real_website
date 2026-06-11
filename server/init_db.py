@@ -5,6 +5,7 @@ import sys
 DB_PATH = os.path.join(os.path.dirname(__file__), 'button.db')
 
 def init_db():
+    global DB_PATH
     dirpath = os.path.dirname(DB_PATH)
     # ensure target directory exists; if creation fails, fall back to a per-user location
     try:
