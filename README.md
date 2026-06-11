@@ -1,3 +1,46 @@
+The Button — Local static site
+
+What this is
+
+A single-page polished "mystery" site centered around a giant button. It implements:
+
+- Giant interactive button with counter
+- Achievements system
+- 100+ lore entries unlocked every 25 clicks
+- Spam detection that triggers pranks
+- Several prank events (fake update, goose, fake call, alien contact, potato CAPTCHA, teleporting button, DVD mode, secret reward, rickroll, boss fight)
+- Onboarding modal with Gamer Tag and Humor toggle
+- Local persistence (localStorage)
+- Polished glassmorphism UI, responsive layout, animated particles
+
+How to run
+
+1. Open the folder in your browser (double-click `index.html`) or serve it with a simple static server.
+
+Quick static server (PowerShell):
+
+  python -m http.server 8000; if($?) { start http://localhost:8000 }
+
+Notes
+
+- This is a fully client-side demo. No backend analytics are included — "global" stats are faked and stored locally.
+- The prank assets use an external image for the goose; you can replace it with an included asset if desired.
+- Browser notification permission is requested only if the user enables "Enhanced Humor Mode".
+
+Files changed
+
+- `index.html` — main app
+- `style.css` — styles
+- `script.js` — main behavior
+- `README.md` — this file
+
+Next steps / TODO
+
+- Add more lore text variations (currently generated from a small base)
+- Add sounds for clicks and pranks (optional)
+- Add server-side global stats and visitor tracking if desired
+
+Enjoy the button.
 The Button — static single-page interactive site
 
 What this contains

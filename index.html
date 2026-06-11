@@ -1,16 +1,104 @@
 <!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>The Button</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div id="app" class="app" role="application">
-    <div class="hud">
-      <div class="counter" role="status">Presses: <span id="count">0</span></div>
-      <div id="achievements" class="achievements" aria-live="polite"></div>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>The Button — Press If You Dare</title>
+    <meta name="description" content="A mysterious, polished internet game centered around a giant button. Achievements, lore, pranks, and secrets await." />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <canvas id="particles"></canvas>
+
+    <header class="topbar">
+      <div class="brand">The Button</div>
+      <div class="stats-mini">
+        <span id="visitor-greeting">Welcome.</span>
+        <button id="open-stats" class="pill">Stats</button>
+      </div>
+    </header>
+
+    <main class="stage">
+      <section class="center-card">
+        <div class="glass card">
+          <div class="lead">
+            <h1 id="gamer-tag-display">Welcome</h1>
+            <p id="subtext">Press the button. See what happens.</p>
+          </div>
+
+          <div class="button-wrap">
+            <button id="the-button" class="giant">THE BUTTON</button>
+            <div class="counter" aria-live="polite">Presses: <span id="count">0</span></div>
+          </div>
+
+          <div class="message-box" id="message-box" aria-live="polite">Be brave. Press the button.</div>
+
+          <div class="controls">
+            <button id="achievements-toggle" class="pill">Achievements</button>
+            <button id="lore-toggle" class="pill">Lore</button>
+            <button id="reset" class="pill danger">Reset</button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel" id="side-panel">
+        <div class="glass side-card">
+          <h3>Global Stats</h3>
+          <ul class="global-stats" id="global-stats">
+            <li>Total Visitors: <span id="stat-visitors">1</span></li>
+            <li>Total Presses: <span id="stat-presses">0</span></li>
+            <li>Gooses Released: <span id="stat-goose">0</span></li>
+            <li>Potatoes Detected: <span id="stat-potato">0</span></li>
+            <li>Pranks Triggered: <span id="stat-pranks">0</span></li>
+          </ul>
+          <hr />
+          <div id="achievements-panel" class="panel-section">
+            <h4>Achievements</h4>
+            <ul id="achievements-list" class="achievements-list"></ul>
+          </div>
+
+          <div id="lore-panel" class="panel-section hidden">
+            <h4>Lore</h4>
+            <div id="lore-list" class="lore-list"></div>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <div id="toast-area" aria-live="polite"></div>
+
+    <!-- Onboarding Modal -->
+    <div id="onboard" class="modal">
+      <div class="modal-card glass">
+        <h2>Welcome, Traveler.</h2>
+        <p class="muted">Before interacting with The Button, a few questions must be answered.</p>
+
+        <label class="field">
+          <div class="label">Choose your Gamer Tag</div>
+          <input id="gamer-tag" placeholder="Goose Wrangler, Potato Inspector, Government Agent" maxlength="32" />
+        </label>
+
+        <label class="field toggle">
+          <div>
+            <div class="label">Enable Enhanced Humor Mode™</div>
+            <div class="desc">May increase comedy, chaos, goose activity, and other unintended consequences.</div>
+          </div>
+          <input id="humor-toggle" type="checkbox" />
+        </label>
+
+        <div class="modal-actions">
+          <button id="accept-onboard" class="pill primary">Accept The Consequences</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Prank & special modals injected dynamically by JS -->
+
+    <script src="script.js"></script>
+  </body>
+</html>
     </div>
     </div>
     </div>
