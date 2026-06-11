@@ -12,6 +12,11 @@ const MESSAGES = [
   'This is not a drill. This is a button.'
 ];
 
+// generate more messages programmatically to reach hundreds
+for(let i=0;i<200;i++){
+  MESSAGES.push(`Random observation #${i+1}: The Button hums.`);
+}
+
 const ACHIEVEMENTS = [
   {count:10, label:'No Self Control'},
   {count:50, label:'Professional Button Enjoyer'},
@@ -27,6 +32,11 @@ const LORE = [
   'A failed toaster and a comet had a baby; the Button is that baby.',
   'It was rented, not owned.'
 ];
+
+// generate 100 more absurd lore entries
+for(let i=0;i<120;i++){
+  LORE.push(`Lore Entry ${i+1}: According to unverified sources, the Button once declined to be pressed on Thursdays.`);
+}
 
 const elements = {
   count: document.getElementById('count'),
@@ -49,13 +59,61 @@ let bossUnlocked = count >= 50;
 let weirdTriggered = false;
 let activeTimers = [];
 let dvdState = null;
+let user = { name: null, humor: false };
 
 function init(){
   render();
-  elements.bigButton.addEventListener('click', onPress);
+  if(elements.bigButton) elements.bigButton.addEventListener('click', onPress);
   document.addEventListener('keydown', handleKeydown);
-  elements.overlay.addEventListener('click', hideOverlay);
+  if(elements.overlay) elements.overlay.addEventListener('click', hideOverlay);
+  // If advanced toggle exists, sync its state; default off
+  if(elements.advancedToggle){ elements.advancedToggle.checked = false; }
   window.addEventListener('resize', resizeCanvas);
+  // onboarding check
+  const storedName = localStorage.getItem('thebutton-name');
+  const storedHumor = localStorage.getItem('thebutton-humor');
+  if(storedName){ user.name = storedName; user.humor = storedHumor === 'true'; greetReturningUser(); }
+  else { showOnboard(); }
+}
+
+function showOnboard(){
+  const ob = document.getElementById('onboard'); if(!ob) return;
+  ob.classList.remove('hidden'); elements.overlay.classList.remove('hidden');
+  ob.innerHTML = `
+    <h3>Welcome, Traveler.</h3>
+    <div class="onboard-form">
+      <label for="nick">Choose your Gamer Tag</label>
+      <input id="nick" type="text" placeholder="Goose Wrangler" />
+      <div class="switch"><label>Enable Enhanced Humor Mode™</label><input id="humorToggle" type="checkbox"></div>
+      <button id="accept">Accept The Consequences</button>
+    </div>`;
+  document.getElementById('accept').addEventListener('click', ()=>{
+    const nick = (document.getElementById('nick').value || 'Anonymous').trim();
+    const humor = document.getElementById('humorToggle').checked;
+    user.name = nick; user.humor = !!humor;
+    localStorage.setItem('thebutton-name', user.name);
+    localStorage.setItem('thebutton-humor', String(user.humor));
+    ob.classList.add('hidden'); elements.overlay.classList.add('hidden');
+    greetReturningUser();
+    if(user.humor){ requestNotificationPermission(); }
+  });
+}
+
+function greetReturningUser(){
+  if(!user.name) return;
+  const greet = [`Welcome back, ${user.name}.`, `${user.name} has returned.`];
+  showMessage(randomFrom(greet));
+}
+
+function requestNotificationPermission(){
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'default'){
+    Notification.requestPermission().then(p => {
+      if(p === 'granted'){
+        showMessage('Notifications enabled. Expect the occasional goose.');
+      }
+    });
+  }
 }
 
 function handleKeydown(event){
@@ -115,6 +173,9 @@ function showMessage(text){
   message.className = 'message';
   message.textContent = text;
   elements.messages.prepend(message);
+  // keep message list short
+  const msgs = elements.messages.querySelectorAll('.message');
+  if(msgs.length > 6){ msgs[msgs.length-1].remove(); }
   activeTimers.push(setTimeout(()=>{ message.style.opacity='0'; message.style.transform='translateY(-12px)'; }, 2600));
   activeTimers.push(setTimeout(()=>{ message.remove(); }, 3400));
 }
@@ -182,12 +243,12 @@ function loreCount(){
 
 function showModal(title, body, duration = 3600){
   clearTransient();
-  elements.modal.innerHTML = `<h3>${title}</h3><div>${body}</div>`;
+  if(!elements.modal || !elements.overlay) return;
+  elements.modal.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3 style="margin:0">${title}</h3><button id=\"modal-close\" aria-label=\"Close\">✕</button></div><div>${body}</div>`;
   elements.overlay.classList.remove('hidden');
   elements.modal.classList.remove('hidden');
-  if(duration > 0){
-    activeTimers.push(setTimeout(hideOverlay, duration));
-  }
+  const close = document.getElementById('modal-close'); if(close) close.addEventListener('click', hideOverlay);
+  if(duration > 0){ activeTimers.push(setTimeout(hideOverlay, duration)); }
 }
 
 function hideOverlay(){
@@ -232,7 +293,7 @@ function hideDVD(){
 }
 
 function clearTransient(){
-  activeTimers.forEach(id => { clearTimeout(id); clearInterval(id); });
+  activeTimers.forEach(id => { try{ if(typeof id === 'number') { clearTimeout(id); clearInterval(id); } }catch(e){} });
   activeTimers = [];
 }
 
@@ -241,6 +302,8 @@ function randomFrom(array){
 }
 
 function triggerRandomReward(){
+  // gate secret events behind user's humor preference
+  if(!user.humor) return;
   if(secretCooldown) return;
   secretCooldown = true;
   activeTimers.push(setTimeout(() => { secretCooldown = false; }, 7000));

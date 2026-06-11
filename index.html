@@ -7,22 +7,25 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div id="app" class="app">
+  <div id="app" class="app" role="application">
     <div class="hud">
-      <div class="counter">Presses: <span id="count">0</span></div>
-      <div id="achievements" class="achievements"></div>
+      <div class="counter" role="status">Presses: <span id="count">0</span></div>
+      <div id="achievements" class="achievements" aria-live="polite"></div>
+    </div>
+    </div>
     </div>
 
-    <div class="button-wrap">
+    <main class="button-wrap" role="main">
       <button id="big-button" class="big-button" aria-label="Press The Button" tabindex="0">PRESS</button>
       <div id="button-overlay" class="button-overlay hidden" aria-hidden="true"></div>
       <div id="messages" class="messages" aria-live="polite"></div>
-    </div>
+    </main>
 
     <div id="lore" class="lore"></div>
 
     <div id="overlay" class="overlay hidden"></div>
     <div id="modal" class="modal hidden"></div>
+  <div id="onboard" class="modal hidden" aria-hidden="true"></div>
     <canvas id="dvd-canvas" class="dvd hidden"></canvas>
     <div id="confetti" class="confetti hidden"></div>
   </div>
