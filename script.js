@@ -29,12 +29,13 @@
     gamerTag:'Traveler',
     humor:false,
     lastClicks:[],
-    pranks:0,
+  pranks:0,
+  timeSpentSeconds: 0,
   };
 
   // --- Data ---
   const messages = [
-    'Interesting choice.','You could be doing homework.','The button appreciates your loyalty.','Your click has been recorded for scientific purposes.','Productivity levels unchanged.','The Department of Button Affairs has been notified.','Your FBI agent is taking notes.','That felt nice, didn\'t it?','A brief moment of joy was added to the universe.','You are now 0.001% closer to a secret.'
+    'please dont.', 'Interesting choice.','You could be doing homework.','The button appreciates your loyalty.','Your click has been recorded for scientific purposes.','Productivity levels unchanged.','The Department of Button Affairs has been notified.','Your FBI agent is taking notes.','That felt nice, didn\'t it?','A brief moment of joy was added to the universe.','You are now 0.001% closer to a secret.'
   ];
 
   // generate 100+ lore entries
@@ -158,6 +159,17 @@
     qs('#stat-pranks').textContent = state.pranks;
   }
 
+  // update global presses stored in localStorage
+  function updateGlobalPresses(delta=1){
+    const k='thebutton:global';
+    try{
+      const g = JSON.parse(localStorage.getItem(k)) || {visitors:1,presses:0,goose:0,potato:0,pranks:0};
+      g.presses = (g.presses||0) + delta;
+      localStorage.setItem(k,JSON.stringify(g));
+      const el = qs('#stat-world-presses'); if(el) el.textContent = g.presses;
+    }catch(e){console.warn('global update err',e)}
+  }
+
   function runPrank(name){
     switch(name){
       case 'fakeUpdate': prankFakeUpdate(); break;
@@ -272,21 +284,32 @@
   }
 
   function prankBossFight(){
-    // Simple boss fight overlay
-    const modal = document.createElement('div'); modal.className='modal'; const card=document.createElement('div'); card.className='modal-card glass';
-    let hp = 80; card.innerHTML=`<h3>Button Prime</h3><div id='boss-hp' style='height:16px;background:#022;color:var(--neon);border-radius:8px'></div><p class='muted'>Click the button to damage the boss.</p>`;
+    // Improved boss fight overlay: centered and uses event listener
+    const modal = document.createElement('div'); modal.className='modal'; modal.style.zIndex = 2000;
+    const card = document.createElement('div'); card.className='modal-card glass';
+    let hp = 100;
+    card.innerHTML = `
+      <h3>Button Prime</h3>
+      <div style='background:rgba(255,255,255,0.04);border-radius:8px;padding:6px;margin-top:8px'>
+        <div id='boss-hp' style='height:16px;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:100%;border-radius:8px;transition:width 180ms linear'></div>
+      </div>
+      <p class='muted'>Click the button to damage the boss.</p>`;
     modal.appendChild(card); document.body.appendChild(modal);
-    const hpBar = card.querySelector('#boss-hp');
-    function damage(){ hp -= rand(6,14); if(hp<0) hp=0; hpBar.style.width = (hp) + '%'; if(hp<=0){ toast('Slight Sense of Accomplishment'); modal.remove(); } }
-    // hook button temporarily
-    const old = btn.onclick; btn.onclick = ()=>{ state.presses++; save(); render(); damage(); checkAchievements(); };
-    setTimeout(()=>{ btn.onclick = old; modal.remove(); },12000);
+    const hpBar = card.querySelector('#boss-hp'); hpBar.style.width = hp + '%';
+    function damage(){ hp -= rand(6,14); if(hp<0) hp=0; hpBar.style.width = (hp) + '%'; if(hp<=0){ toast('Slight Sense of Accomplishment'); document.body.removeChild(modal); removeListener(); } }
+    // add temporary click listener to the button
+    function bossClickHandler(){ state.presses++; save(); render(); damage(); checkAchievements(); updateGlobalPresses(1); }
+    btn.addEventListener('click', bossClickHandler);
+    function removeListener(){ try{ btn.removeEventListener('click', bossClickHandler); }catch(e){} }
+    // auto-end after 12s
+    setTimeout(()=>{ removeListener(); if(document.body.contains(modal)) document.body.removeChild(modal); },12000);
   }
 
   // --- Button click handler ---
   btn.addEventListener('click', ()=>{
     recordClickTime();
     state.presses++;
+  updateGlobalPresses(1);
     // animations
     btn.animate([{transform:'scale(1)'},{transform:'scale(1.06)'},{transform:'scale(1)'}],{duration:260});
     // color pulse
@@ -297,6 +320,17 @@
     // minor chance for secret reward
     if(Math.random()<0.005) triggerPrank();
   });
+
+  // --- Time tracking (session + persisted) ---
+  let sessionTimer = null; let sessionSecondsActive = 0; let lastTick = Date.now();
+  function tickTime(){ const now = Date.now(); const delta = Math.floor((now - lastTick)/1000); if(delta>=1){ state.timeSpentSeconds = (state.timeSpentSeconds||0) + delta; lastTick = now; renderTime(); save(); } }
+  function renderTime(){ const s = state.timeSpentSeconds || 0; const el = qs('#stat-time'); if(!el) return; el.textContent = formatTime(s); }
+  function formatTime(sec){ if(sec<60) return sec+'s'; const m = Math.floor(sec/60); const s = sec%60; if(m<60) return `${m}m ${s}s`; const h = Math.floor(m/60); const mm = m%60; return `${h}h ${mm}m`; }
+  function startTime(){ if(sessionTimer) return; lastTick = Date.now(); sessionTimer = setInterval(tickTime,1000); }
+  function stopTime(){ if(sessionTimer){ clearInterval(sessionTimer); sessionTimer=null; tickTime(); save(); } }
+  document.addEventListener('visibilitychange', ()=>{ if(document.hidden) stopTime(); else startTime(); });
+  window.addEventListener('beforeunload', ()=>{ stopTime(); });
+
 
   // --- Onboarding ---
   acceptOnboard.onclick = ()=>{
@@ -332,7 +366,7 @@
     let g;
     try{ g = JSON.parse(localStorage.getItem(k)) || {visitors:1,presses:0,goose:0,potato:0,pranks:0}; }catch(e){ g={visitors:1,presses:0,goose:0,potato:0,pranks:0}; }
     g.visitors += 1; g.presses += state.presses; localStorage.setItem(k,JSON.stringify(g));
-    qs('#stat-visitors').textContent = g.visitors; qs('#stat-presses').textContent = g.presses; qs('#stat-goose').textContent=g.goose; qs('#stat-potato').textContent=g.potato; qs('#stat-pranks').textContent=g.pranks;
+  qs('#stat-visitors').textContent = g.visitors; qs('#stat-world-presses').textContent = g.presses; qs('#stat-goose').textContent=g.goose; qs('#stat-potato').textContent=g.potato; qs('#stat-pranks').textContent=g.pranks;
   }
 
   // --- Particles background (simple) ---
@@ -344,6 +378,9 @@
 
   // --- Init ---
   load(); initGlobalStats(); render(); initParticles();
+
+  // start time tracking and render initial time
+  renderTime(); startTime();
 
   // show onboard if first time
   if(!localStorage.getItem(STORAGE_KEY)){
