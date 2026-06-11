@@ -5,8 +5,9 @@ import sys
 DB_PATH = os.path.join(os.path.dirname(__file__), 'button.db')
 
 def init_db():
-    global DB_PATH
-    dirpath = os.path.dirname(DB_PATH)
+    # Use a local db_path so we don't need to rebind the module-level DB_PATH
+    db_path = DB_PATH
+    dirpath = os.path.dirname(db_path)
     # ensure target directory exists; if creation fails, fall back to a per-user location
     try:
         os.makedirs(dirpath, exist_ok=True)
@@ -16,8 +17,7 @@ def init_db():
         print(f"Attempting fallback directory {fallback_dir}", file=sys.stderr)
         try:
             os.makedirs(fallback_dir, exist_ok=True)
-            global DB_PATH
-            DB_PATH = os.path.join(fallback_dir, 'button.db')
+            db_path = os.path.join(fallback_dir, 'button.db')
             dirpath = fallback_dir
         except Exception as e2:
             print(f"Failed to create fallback directory {fallback_dir}: {e2}", file=sys.stderr)
@@ -25,9 +25,9 @@ def init_db():
 
     # try opening/creating the sqlite file
     try:
-        conn = sqlite3.connect(DB_PATH)
+        conn = sqlite3.connect(db_path)
     except Exception as e:
-        print(f"Failed to open database file {DB_PATH}: {e}", file=sys.stderr)
+        print(f"Failed to open database file {db_path}: {e}", file=sys.stderr)
         print("Possible causes: directory not writable or SELinux/AppArmor restrictions.", file=sys.stderr)
         print(f"Suggestion: adjust permissions, for example: sudo chown -R $(whoami) {dirpath}", file=sys.stderr)
         sys.exit(1)
@@ -45,7 +45,8 @@ def init_db():
         cur.execute('INSERT OR IGNORE INTO statistics(key,value) VALUES(?,?)', (k,0))
     conn.commit()
     conn.close()
+    return db_path
 
 if __name__ == '__main__':
-    init_db()
-    print('Initialized', DB_PATH)
+    final_path = init_db()
+    print('Initialized', final_path)
