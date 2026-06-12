@@ -232,12 +232,27 @@
     card.querySelector('#call-answer').onclick = finish; card.querySelector('#call-decline').onclick = finish;
   }
 
-  function prankAlien(){
-    const modal = document.createElement('div'); modal.className='modal';
-    const card = document.createElement('div'); card.className='modal-card glass';
-    card.innerHTML = `<h3>— SIGNAL —</h3><pre style='font-family:monospace;white-space:pre-wrap'>${Array.from({length:8}).map(()=> '>' + Math.random().toString(36).slice(2,12)).join('\n')}</pre><p class='muted'>Signal lost. Aliens pressed the button too.</p>`;
-    modal.appendChild(card); document.body.appendChild(modal);
-    setTimeout(()=>modal.remove(),4200);
+  function alienContact() {
+        overlay.classList.remove('hidden');
+            modal.classList.remove('hidden');
+
+                modal.innerHTML = `
+                        <h3>📡 UNKNOWN TRANSMISSION</h3>
+                                <div>01001000 01101001 00100000 01000101 01111010 01110010 01100001</div>
+                                    `;
+
+                                        setTimeout(() => {
+                                                modal.innerHTML += `
+                                                            <div>Connection terminated.</div>
+                                                                    `;
+                                                                        }, 3000);
+
+                                                                            setTimeout(() => {
+                                                                                    modal.innerHTML += `
+                                                                                                <div>No further data available.</div>
+                                                                                                        `;
+                                                                                                            }, 5000);
+                                                                                                            }
   }
 
   function prankPotato(){
