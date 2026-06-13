@@ -183,7 +183,7 @@
       case 'fakeUpdate': prankFakeUpdate(); break;
       case 'goose': prankGoose(); break;
       case 'fakeCall': prankFakeCall(); break;
-      case 'alien': prankContact(); break;
+      case 'alien': alienContact(); break;
       case 'potato': prankPotato(); break;
       case 'teleport': prankTeleport(); break;
       case 'dvd': prankDVD(); break;
