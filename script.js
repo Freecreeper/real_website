@@ -232,27 +232,35 @@
     card.querySelector('#call-answer').onclick = finish; card.querySelector('#call-decline').onclick = finish;
   }
 
-  function alienContact() {
-        overlay.classList.remove('hidden');
-            modal.classList.remove('hidden');
+function alienContact() {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
 
-                modal.innerHTML = `
-                        <h3>📡 UNKNOWN TRANSMISSION</h3>
-                                <div>01001000 01101001 00100000 01000101 01111010 01110010 01100001</div>
-                                    `;
+  const card = document.createElement('div');
+  card.className = 'modal-card glass';
 
-                                        setTimeout(() => {
-                                                modal.innerHTML += `
-                                                            <div>Connection terminated.</div>
-                                                                    `;
-                                                                        }, 3000);
+  card.innerHTML = `
+    <h3>📡 UNKNOWN TRANSMISSION</h3>
+    <div style="font-family:monospace">
+      01001000 01101001 00100000 01000101 01111010 01110010 01100001
+    </div>
+  `;
 
-                                                                            setTimeout(() => {
-                                                                                    modal.innerHTML += `
-                                                                                                <div>No further data available.</div>
-                                                                                                `;
-                                                                                                            }, 5000);
-                                                                                                            }
+  modal.appendChild(card);
+  document.body.appendChild(modal);
+
+  setTimeout(() => {
+    card.innerHTML += `<div style="margin-top:10px">Connection terminated.</div>`;
+  }, 3000);
+
+  setTimeout(() => {
+    card.innerHTML += `<div>No further data available.</div>`;
+  }, 5000);
+
+  setTimeout(() => {
+    modal.remove();
+  }, 9000);
+}
 
   function prankPotato(){
     const modal = document.createElement('div'); modal.className='modal';
