@@ -261,21 +261,46 @@ function alienContact() {
     modal.remove();
   }, 9000);
 }
-
+//potato captha
   function prankPotato(){
-    const modal = document.createElement('div'); modal.className='modal';
-    const card = document.createElement('div'); card.className='modal-card glass';
-    card.innerHTML = `<h3>Potential Potato CAPTCHA</h3><p class='muted'>Please confirm you are not a potato.</p>
-      <div style='display:flex;gap:8px;justify-content:center;margin-top:10px'><button id='potato-human' class='pill'>I am human</button><button id='potato-goat' class='pill'>I am a goat</button></div>
-      <p class='muted' style='text-align:center;margin-top:12px'>Potential potato detected.</p>`;
-    modal.appendChild(card); document.body.appendChild(modal);
-    // wait for user interaction; increment stat when they click either
-    const human = card.querySelector('#potato-human');
-    const goat = card.querySelector('#potato-goat');
-    function finish(){ qs('#stat-potato').textContent = Number(qs('#stat-potato').textContent||0) + 1; modal.remove(); }
-    human.onclick = finish; goat.onclick = finish;
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+
+  const card = document.createElement('div');
+  card.className = 'modal-card glass';
+
+  card.innerHTML = `
+    <h3>🥔 Potato Verification</h3>
+    <p class="muted">Please confirm you are not a potato.</p>
+
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+      <button id="potato-human" class="pill">I am human</button>
+      <button id="potato-goat" class="pill">I am a goat</button>
+    </div>
+  `;
+
+  modal.appendChild(card);
+  document.body.appendChild(modal);
+
+  function finish(){
+    // LOCAL update (safe)
+    state.pranks = (state.pranks || 0) + 1;
+    save();
+
+    // UI update if exists
+    const el = qs('#stat-potato');
+    if (el) el.textContent = Number(el.textContent || 0) + 1;
+
+    // SERVER update (important for real stats page)
+    postEvent('potato', 1);
+
+    modal.remove();
+    toast("Potato detection processed 🥔");
   }
 
+  card.querySelector('#potato-human').onclick = finish;
+  card.querySelector('#potato-goat').onclick = finish;
+}
   function prankTeleport(){
     const original = btn.getBoundingClientRect();
     let moves = 0; const max=18;
