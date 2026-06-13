@@ -250,10 +250,9 @@
                                                                             setTimeout(() => {
                                                                                     modal.innerHTML += `
                                                                                                 <div>No further data available.</div>
-                                                                                                        `;
+                                                                                                `;
                                                                                                             }, 5000);
                                                                                                             }
-  }
 
   function prankPotato(){
     const modal = document.createElement('div'); modal.className='modal';
