@@ -23,8 +23,9 @@
 
       <section class="glass" style="padding:22px;">
         <h2>Worldwide Stats (local demo)</h2>
-        <p class="muted">This demo stores global-ish numbers in your browser's localStorage.</p>
-        <ul id="global-stats-page" style="margin-top:12px"></ul>
+        <p class="muted">This demo stores global numbers in your browser's localStorage.</p>
+       <li>Worldwide Presses: <span id="world-presses">0</span></li>
+      <li>Total Visitors: <span id="world-visitors">0</span></li>
       </section>
 
       <section style="margin-top:18px;text-align:center">
@@ -41,13 +42,13 @@
         const li = document.getElementById('local-stats');
         if(raw){ const s = JSON.parse(raw); li.innerHTML = `<li>Gamer Tag: ${s.gamerTag||'Traveler'}</li><li>Time spent: ${fmtTime(s.timeSpentSeconds||0)}</li><li>Presses (you): ${s.presses||0}</li><li>Achievements: ${(s.achievements||[]).length}</li><li>Lore discovered: ${(s.loreSeen||[]).length}</li>`; } else { li.innerHTML='<li>No local data yet.</li>' }
       }catch(e){console.warn(e)}
+      
 
-      // global
-      const socket = io("http://3.90.63.167:5000");
-
-const globalList = document.getElementById("global-stats-page");
+    const socket = io("http://3.90.63.167:5000");
 
 socket.on("stats_update", (data) => {
+  const globalList = document.getElementById("global-stats-page");
+
   globalList.innerHTML = `
     <li>Total Visitors: ${data.visitors}</li>
     <li>Worldwide Presses: ${data.presses}</li>
@@ -56,9 +57,12 @@ socket.on("stats_update", (data) => {
     <li>Pranks Triggered: ${data.pranks}</li>
   `;
 
-  // 👇 optional live numbers if you add spans later
+  // optional live single values
   const wp = document.getElementById("world-presses");
+  const wv = document.getElementById("world-visitors");
+
   if (wp) wp.textContent = data.presses;
+  if (wv) wv.textContent = data.visitors;
 });
 
       // version
