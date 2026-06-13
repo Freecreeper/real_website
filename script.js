@@ -340,38 +340,7 @@ function alienContact() {
   postEvent('rickroll',1);
   }
 
-  function prankBossFight(){
-    // Improved boss fight overlay: centered and uses event listener
-   const rect = btn.getBoundingClientRect();
-
-const modal = document.createElement('div');
-modal.className = 'modal boss';
-modal.style.position = 'fixed';
-modal.style.zIndex = '9999';
-
-modal.style.left =
-  (rect.left + rect.width / 2 - 175) + 'px';
-
-modal.style.top =
-  (rect.top - 250) + 'px';
-    const card = document.createElement('div'); card.className='modal-card glass';
-    let hp = 100;
-    card.innerHTML = `
-      <h3>Button Prime</h3>
-      <div style='background:rgba(255,255,255,0.04);border-radius:8px;padding:6px;margin-top:8px'>
-        <div id='boss-hp' style='height:16px;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:100%;border-radius:8px;transition:width 180ms linear'></div>
-      </div>
-      <p class='muted'>Click the button to damage the boss.</p>`;
-    modal.appendChild(card); document.body.appendChild(modal);
-    const hpBar = card.querySelector('#boss-hp'); hpBar.style.width = hp + '%';
-  function damage(){ hp -= rand(6,14); if(hp<0) hp=0; hpBar.style.width = (hp) + '%'; if(hp<=0){ toast('Slight Sense of Accomplishment'); try{ postEvent('button_prime',1); }catch(e){} document.body.removeChild(modal); removeListener(); } }
-    // add temporary click listener to the button
-    function bossClickHandler(){ state.presses++; save(); render(); damage(); checkAchievements(); updateGlobalPresses(1); }
-    btn.addEventListener('click', bossClickHandler);
-    function removeListener(){ try{ btn.removeEventListener('click', bossClickHandler); }catch(e){} }
-    // auto-end after 12s
-    setTimeout(()=>{ removeListener(); if(document.body.contains(modal)) document.body.removeChild(modal); },12000);
-  }
+  
 
   // --- Button click handler ---
   btn.addEventListener('click', ()=>{
