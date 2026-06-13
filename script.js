@@ -324,8 +324,11 @@ modal.className = 'modal boss';
 modal.style.position = 'fixed';
 modal.style.zIndex = '9999';
 
-modal.style.left = rect.left + 'px';
-modal.style.top = (rect.top - 360) + 'px';
+modal.style.left =
+  (rect.left + rect.width / 2 - 175) + 'px';
+
+modal.style.top =
+  (rect.top - 250) + 'px';
     const card = document.createElement('div'); card.className='modal-card glass';
     let hp = 100;
     card.innerHTML = `
