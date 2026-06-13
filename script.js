@@ -309,7 +309,15 @@
 
   function prankBossFight(){
     // Improved boss fight overlay: centered and uses event listener
-    const modal = document.createElement('div'); modal.className='modal boss'; modal.style.zIndex = 9999; modal.style.position='fixed'; modal.style.inset='0';
+   const rect = btn.getBoundingClientRect();
+
+const modal = document.createElement('div');
+modal.className = 'modal boss';
+modal.style.position = 'fixed';
+modal.style.zIndex = '9999';
+
+modal.style.left = rect.left + 'px';
+modal.style.top = (rect.top - 220) + 'px';
     const card = document.createElement('div'); card.className='modal-card glass';
     let hp = 100;
     card.innerHTML = `
