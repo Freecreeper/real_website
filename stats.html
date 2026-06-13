@@ -31,7 +31,7 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
- <script>
+<script>
 const API_BASE = '';
 
 async function fetchStats() {
@@ -39,14 +39,26 @@ async function fetchStats() {
     const res = await fetch(API_BASE + '/api/stats');
     const data = await res.json();
 
-    document.getElementById("g_world_visitors").textContent = data.total_visitors || 0;
-    document.getElementById("g_world_presses").textContent = data.total_presses || 0;
-    document.getElementById("g_world_goose").textContent = data.gooses_released || 0;
-    document.getElementById("g_world_potato").textContent = data.potatoes_detected || 0;
-    document.getElementById("g_world_pranks").textContent = data.prank_events || 0;
+    document.getElementById("g_total_visitors").textContent =
+      data.total_visitors || 0;
+
+    document.getElementById("g_total_presses").textContent =
+      data.total_presses || 0;
+
+    document.getElementById("g_total_goose").textContent =
+      data.gooses_released || 0;
+
+    document.getElementById("g_total_potato").textContent =
+      data.potatoes_detected || 0;
+
+    document.getElementById("g_total_pranks").textContent =
+      (data.gooses_released || 0) +
+      (data.potatoes_detected || 0) +
+      (data.alien_contacts || 0) +
+      (data.rickroll_victims || 0);
 
   } catch (e) {
-    console.warn("stats fetch failed", e);
+    console.error("Stats fetch failed:", e);
   }
 }
 
