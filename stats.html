@@ -31,7 +31,7 @@
         <div id="version-area" class="version" style="display:inline-block;cursor:pointer">v0.0.0</div>
       </section>
     </main>
-
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script>
       function fmtTime(sec){ if(!sec) return '0s'; if(sec<60) return sec+'s'; const m=Math.floor(sec/60); const s=sec%60; if(m<60) return m+'m '+s+'s'; const h=Math.floor(m/60); const mm=m%60; return h+'h '+mm+'m'; }
 
@@ -42,11 +42,24 @@
         if(raw){ const s = JSON.parse(raw); li.innerHTML = `<li>Gamer Tag: ${s.gamerTag||'Traveler'}</li><li>Time spent: ${fmtTime(s.timeSpentSeconds||0)}</li><li>Presses (you): ${s.presses||0}</li><li>Achievements: ${(s.achievements||[]).length}</li><li>Lore discovered: ${(s.loreSeen||[]).length}</li>`; } else { li.innerHTML='<li>No local data yet.</li>' }
       }catch(e){console.warn(e)}
 
-      // global-ish
-      try{
-        const k='thebutton:global'; const g = JSON.parse(localStorage.getItem(k)) || {visitors:0,presses:0,goose:0,potato:0,pranks:0};
-        const el = document.getElementById('global-stats-page'); el.innerHTML = `<li>Total Visitors: ${g.visitors||0}</li><li>Worldwide Presses: ${g.presses||0}</li><li>Gooses Released: ${g.goose||0}</li><li>Potatoes Detected: ${g.potato||0}</li><li>Pranks Triggered: ${g.pranks||0}</li>`;
-      }catch(e){console.warn(e)}
+      // global
+      const socket = io("http://3.90.63.167:5000");
+
+const globalList = document.getElementById("global-stats-page");
+
+socket.on("stats_update", (data) => {
+  globalList.innerHTML = `
+    <li>Total Visitors: ${data.visitors}</li>
+    <li>Worldwide Presses: ${data.presses}</li>
+    <li>Gooses Released: ${data.goose}</li>
+    <li>Potatoes Detected: ${data.potato}</li>
+    <li>Pranks Triggered: ${data.pranks}</li>
+  `;
+
+  // 👇 optional live numbers if you add spans later
+  const wp = document.getElementById("world-presses");
+  if (wp) wp.textContent = data.presses;
+});
 
       // version
       fetch('version.json').then(r=>r.json()).then(v=>{ const a=document.getElementById('version-area'); a.textContent='v'+(v.version||'0.0.0'); a.addEventListener('click', ()=>alert(`Version ${v.version}\nBuild: ${v.build}\n${v.notes||''}`)); }).catch(()=>{});
