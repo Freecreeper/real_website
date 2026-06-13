@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Button Leaderboard</title>
+
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header class="topbar">
+  <div class="brand">🏆 Leaderboard</div>
+
+  <a href="index.html" class="pill">
+    Back
+  </a>
+</header>
+
+<main style="max-width:900px;margin:auto;padding:40px;">
+
+  <section class="glass" style="padding:20px;">
+    <h2>Top Button Pressers</h2>
+
+    <table style="width:100%;margin-top:20px;">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Presses</th>
+          <th>Achievements</th>
+        </tr>
+      </thead>
+
+      <tbody id="leaderboard-body">
+      </tbody>
+    </table>
+
+  </section>
+
+</main>
+
+<script>
+async function loadLeaderboard() {
+  try {
+
+    const res = await fetch('/api/leaderboard');
+    const players = await res.json();
+
+    const body = document.getElementById('leaderboard-body');
+    body.innerHTML = '';
+
+    players.forEach((player,index)=>{
+
+      body.innerHTML += `
+        <tr>
+          <td>${index + 1}</td>
+          <td>${player.name}</td>
+          <td>${player.presses}</td>
+          <td>${player.achievements}</td>
+        </tr>
+      `;
+
+    });
+
+  } catch(err) {
+    console.error(err);
+  }
+}
+
+loadLeaderboard();
+setInterval(loadLeaderboard,5000);
+</script>
+
+</body>
+</html>

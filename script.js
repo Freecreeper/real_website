@@ -415,11 +415,14 @@ function alienContact() {
   qs('#lore-toggle').onclick = ()=>{ qs('#lore-panel').classList.toggle('hidden'); };
   // Stats button toggles the side panel (use body.panel-open for consistent behavior)
   const openStatsBtn = qs('#open-stats');
+  const openLeaderboardBtn = qs('#open-leaderboard');
   if(openStatsBtn){
   openStatsBtn.addEventListener('click', ()=>{ window.location.href = 'stats.html'; });
   }
+  if(openLeaderboardBtn){
+    openLeaderboardBtn.addEventListener('click', ()=>{ window.location.href = 'leaderboard.html'; });
+  }
 
- 
   // --- Particles background (simple) ---
   function initParticles(){
     const canvas = document.getElementById('particles'); const ctx = canvas.getContext('2d'); function resize(){canvas.width=innerWidth;canvas.height=innerHeight;} window.addEventListener('resize',resize); resize();
@@ -457,7 +460,10 @@ function alienContact() {
     {
       method:'POST',
       headers:{'content-type':'application/json'},
-      body:JSON.stringify({delta})
+      body:JSON.stringify({
+        name: state.gamerTag,
+        delta: delta
+      })
     }
   );
 
