@@ -13,19 +13,33 @@ LEADERBOARD_FILE = "leaderboard.json"
 # -----------------------
 # Stats Storage
 # -----------------------
-
 def load_stats():
     if not os.path.exists(STATS_FILE):
         return {
-            "presses": 0,
-            "visitors": 0,
-            "goose": 0,
-            "potato": 0,
-            "pranks": 0
+            "total_presses": 0,
+            "total_visitors": 0,
+            "gooses_released": 0,
+            "potatoes_detected": 0,
+            "pranks_triggered": 0,
+            "alien_contacts": 0,
+            "rickroll_victims": 0,
+            "achievement_unlocks": 0
         }
 
     with open(STATS_FILE, "r") as f:
-        return json.load(f)
+        data = json.load(f)
+
+    # normalize old saves (important or your file stays broken forever)
+    return {
+        "total_presses": data.get("presses", data.get("total_presses", 0)),
+        "total_visitors": data.get("visitors", data.get("total_visitors", 0)),
+        "gooses_released": data.get("goose", data.get("gooses_released", 0)),
+        "potatoes_detected": data.get("potato", data.get("potatoes_detected", 0)),
+        "pranks_triggered": data.get("pranks", data.get("pranks_triggered", 0)),
+        "alien_contacts": data.get("alien_contacts", 0),
+        "rickroll_victims": data.get("rickroll_victims", 0),
+        "achievement_unlocks": data.get("achievement_unlocks", 0),
+    }
 
 
 def save_stats(data):
@@ -73,7 +87,7 @@ def press():
     name = payload.get("name", "Anonymous")
 
     # global presses
-    stats["presses"] += delta
+    stats["total_presses"] = stats.get("total_presses", 0) + delta
     save_stats(stats)
 
     # leaderboard update
@@ -99,7 +113,7 @@ def visit():
 
     stats = load_stats()
 
-    stats["visitors"] += 1
+    stats["total_visitors"] = stats.get("total_visitors", 0) + 1
 
     save_stats(stats)
 
