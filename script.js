@@ -19,6 +19,7 @@
   const gamerTagDisplay = qs('#gamer-tag-display');
   const visitorGreeting = qs('#visitor-greeting');
   const sidePanel = qs('#side-panel');
+  const statCount = qs('#stat-count').textContent = state.presses;
 
   // --- State ---
   const STORAGE_KEY = 'thebutton:v1';
@@ -75,6 +76,10 @@
   function save(){
     try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch(e){console.warn('save err',e)}
   }
+  function applySavedUser() {
+  gamerTagDisplay.textContent = state.gamerTag || "Welcome";
+  visitorGreeting.textContent = "Hello, " + (state.gamerTag || "Traveler");
+}
 
   // --- UI ---
   function render(){
@@ -402,15 +407,7 @@ function alienContact() {
   openStatsBtn.addEventListener('click', ()=>{ window.location.href = 'stats.html'; });
   }
 
-  // --- Fake global stats (stored in localStorage too) ---
-  function initGlobalStats(){
-    const k='thebutton:global';
-    let g;
-    try{ g = JSON.parse(localStorage.getItem(k)) || {visitors:1,presses:0,goose:0,potato:0,pranks:0}; }catch(e){ g={visitors:1,presses:0,goose:0,potato:0,pranks:0}; }
-    g.visitors += 1; g.presses += state.presses; localStorage.setItem(k,JSON.stringify(g));
-  qs('#stat-visitors').textContent = g.visitors; qs('#stat-world-presses').textContent = g.presses; qs('#stat-goose').textContent=g.goose; qs('#stat-potato').textContent=g.potato; qs('#stat-pranks').textContent=g.pranks;
-  }
-
+ 
   // --- Particles background (simple) ---
   function initParticles(){
     const canvas = document.getElementById('particles'); const ctx = canvas.getContext('2d'); function resize(){canvas.width=innerWidth;canvas.height=innerHeight;} window.addEventListener('resize',resize); resize();
@@ -419,7 +416,11 @@ function alienContact() {
   }
 
   // --- Init ---
-  load(); initGlobalStats(); render(); initParticles();
+  load();
+applySavedUser();
+initGlobalStats();
+render();
+initParticles();
 
   // start time tracking and render initial time
   renderTime(); startTime();
@@ -472,7 +473,7 @@ function alienContact() {
         animateNumber(el, Number(data[k] || 0));
       }
       // show panel if hidden briefly to indicate live data available
-      const panel = qs('#global-stats-panel'); if(panel && panel.classList.contains('hidden')){ panel.classList.remove('hidden'); }
+      
     }catch(e){ /* ignore */ }
   }
 
@@ -485,15 +486,13 @@ function alienContact() {
   fetchGlobalStats(); globalRefreshTimer = setInterval(fetchGlobalStats, 30000);
 
   // manual refresh/close handlers
-  const refreshBtn = qs('#refresh-global'); if(refreshBtn) refreshBtn.addEventListener('click', fetchGlobalStats);
-  const closeBtn = qs('#close-global'); if(closeBtn) closeBtn.addEventListener('click', ()=>{ const p=qs('#global-stats-panel'); if(p) p.classList.add('hidden'); });
-
+  
   // show onboard if first time
-  if(!localStorage.getItem(STORAGE_KEY)){
-    onboard.style.display='flex';
-  } else {
-    onboard.style.display='none';
-  }
+  if (!state.gamerTag || state.gamerTag === "Traveler") {
+  onboard.style.display = 'flex';
+} else {
+  onboard.style.display = 'none';
+}
 
 })();
 function jackpotEvent(){

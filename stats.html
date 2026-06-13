@@ -31,16 +31,27 @@
 
   <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
-  <script>
-    const socket = io("http://3.90.63.167:5000");
+ <script>
+const API_BASE = '';
 
-    socket.on("stats_update", (data) => {
-      document.getElementById("world-visitors").textContent = data.visitors;
-      document.getElementById("world-presses").textContent = data.presses;
-      document.getElementById("world-goose").textContent = data.goose;
-      document.getElementById("world-potato").textContent = data.potato;
-      document.getElementById("world-pranks").textContent = data.pranks;
-    });
-  </script>
+async function fetchStats() {
+  try {
+    const res = await fetch(API_BASE + '/api/stats');
+    const data = await res.json();
+
+    document.getElementById("world-visitors").textContent = data.total_visitors || 0;
+    document.getElementById("world-presses").textContent = data.total_presses || 0;
+    document.getElementById("world-goose").textContent = data.gooses_released || 0;
+    document.getElementById("world-potato").textContent = data.potatoes_detected || 0;
+    document.getElementById("world-pranks").textContent = data.prank_events || 0;
+
+  } catch (e) {
+    console.warn("stats fetch failed", e);
+  }
+}
+
+fetchStats();
+setInterval(fetchStats, 5000);
+</script>
 </body>
 </html>
