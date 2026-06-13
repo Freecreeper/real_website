@@ -477,7 +477,9 @@ function alienContact() {
   }
 
   // call visit once on load
+  if (!window.location.pathname.includes("stats.html")) {
   postVisit();
+}
 
   // auto-refresh global stats and animate numbers
   let globalRefreshTimer = null;
