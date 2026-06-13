@@ -490,13 +490,13 @@ function alienContact() {
       const map = {
         total_visitors: 'g_total_visitors',
         total_presses: 'g_total_presses',
-        gooses_released: 'g_gooses_released',
-        potatoes_detected: 'g_potatoes_detected',
-        government_investigations: 'g_government_investigations',
-        button_prime_defeats: 'g_button_prime_defeats',
-        rickroll_victims: 'g_rickroll_victims',
-        alien_contacts: 'g_alien_contacts',
-        achievement_unlocks: 'g_achievement_unlocks'
+        gooses_released: 'g_total_goose',
+        potatoes_detected: 'g_total_potato',
+        government_investigations: 'g_total_government_investigations',
+        button_prime_defeats: 'g_total_button_prime_defeats',
+        rickroll_victims: 'g_total_rickroll_victims',
+        alien_contacts: 'g_total_alien_contacts',
+        achievement_unlocks: 'g_total_achievement_unlocks'
       };
       for(const k in map){
         const el = qs('#' + map[k]); if(!el) continue;
