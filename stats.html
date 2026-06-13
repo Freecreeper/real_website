@@ -1,72 +1,46 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>The Button — Stats</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <header class="topbar">
-      <div class="brand">The Button — Stats</div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <a href="index.html" class="pill">Home</a>
-      </div>
-    </header>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Button — Stats</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
 
-    <main style="padding:48px;max-width:980px;margin:0 auto;">
-      <section class="glass" style="padding:22px;margin-bottom:18px;">
-        <h2>Local Visitor Stats</h2>
-        <p class="muted">Your stored data and session time.</p>
-        <ul id="local-stats" style="margin-top:12px"></ul>
-      </section>
+<body>
+  <header class="topbar">
+    <div class="brand">Global Stats</div>
+    <a href="index.html" class="pill">Back</a>
+  </header>
 
-      <section class="glass" style="padding:22px;">
-        <h2>Worldwide Stats (local demo)</h2>
-        <p class="muted">This demo stores global numbers in your browser's localStorage.</p>
-       <li>Worldwide Presses: <span id="world-presses">0</span></li>
-      <li>Total Visitors: <span id="world-visitors">0</span></li>
-      </section>
+  <main style="padding:40px;max-width:900px;margin:auto;">
 
-      <section style="margin-top:18px;text-align:center">
-        <div id="version-area" class="version" style="display:inline-block;cursor:pointer">v0.0.0</div>
-      </section>
-    </main>
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-    <script>
-      function fmtTime(sec){ if(!sec) return '0s'; if(sec<60) return sec+'s'; const m=Math.floor(sec/60); const s=sec%60; if(m<60) return m+'m '+s+'s'; const h=Math.floor(m/60); const mm=m%60; return h+'h '+mm+'m'; }
+    <section class="glass" style="padding:20px;">
+      <h2>Live Global Stats 🌍</h2>
 
-      // read local state
-      try{
-        const raw = localStorage.getItem('thebutton:v1');
-        const li = document.getElementById('local-stats');
-        if(raw){ const s = JSON.parse(raw); li.innerHTML = `<li>Gamer Tag: ${s.gamerTag||'Traveler'}</li><li>Time spent: ${fmtTime(s.timeSpentSeconds||0)}</li><li>Presses (you): ${s.presses||0}</li><li>Achievements: ${(s.achievements||[]).length}</li><li>Lore discovered: ${(s.loreSeen||[]).length}</li>`; } else { li.innerHTML='<li>No local data yet.</li>' }
-      }catch(e){console.warn(e)}
-      
+      <ul>
+        <li>Total Visitors: <span id="world-visitors">0</span></li>
+        <li>Total Presses: <span id="world-presses">0</span></li>
+        <li>Gooses Released: <span id="world-goose">0</span></li>
+        <li>Potatoes Detected: <span id="world-potato">0</span></li>
+        <li>Pranks Triggered: <span id="world-pranks">0</span></li>
+      </ul>
+    </section>
 
+  </main>
+
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+  <script>
     const socket = io("http://3.90.63.167:5000");
 
-socket.on("stats_update", (data) => {
-  const globalList = document.getElementById("global-stats-page");
-
-  globalList.innerHTML = `
-    <li>Total Visitors: ${data.visitors}</li>
-    <li>Worldwide Presses: ${data.presses}</li>
-    <li>Gooses Released: ${data.goose}</li>
-    <li>Potatoes Detected: ${data.potato}</li>
-    <li>Pranks Triggered: ${data.pranks}</li>
-  `;
-
-  // optional live single values
-  const wp = document.getElementById("world-presses");
-  const wv = document.getElementById("world-visitors");
-
-  if (wp) wp.textContent = data.presses;
-  if (wv) wv.textContent = data.visitors;
-});
-
-      // version
-      fetch('version.json').then(r=>r.json()).then(v=>{ const a=document.getElementById('version-area'); a.textContent='v'+(v.version||'0.0.0'); a.addEventListener('click', ()=>alert(`Version ${v.version}\nBuild: ${v.build}\n${v.notes||''}`)); }).catch(()=>{});
-    </script>
-  </body>
+    socket.on("stats_update", (data) => {
+      document.getElementById("world-visitors").textContent = data.visitors;
+      document.getElementById("world-presses").textContent = data.presses;
+      document.getElementById("world-goose").textContent = data.goose;
+      document.getElementById("world-potato").textContent = data.potato;
+      document.getElementById("world-pranks").textContent = data.pranks;
+    });
+  </script>
+</body>
 </html>
