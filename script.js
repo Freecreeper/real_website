@@ -1,6 +1,11 @@
 // Main script for The Button
+
+  window.addEventListener("error", e => {
+  console.error("SCRIPT ERROR:", e.error);
+});
 (function(){
   // --- Utilities ---
+
   const qs = s => document.querySelector(s);
   const qsa = s => Array.from(document.querySelectorAll(s));
   const rand = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
@@ -19,8 +24,6 @@
   const gamerTagDisplay = qs('#gamer-tag-display');
   const visitorGreeting = qs('#visitor-greeting');
   const sidePanel = qs('#side-panel');
-  const statCount = qs('#stat-count').textContent = state.presses;
-
   // --- State ---
   const STORAGE_KEY = 'thebutton:v1';
   let state = {
@@ -30,7 +33,7 @@
     gamerTag:'Traveler',
     humor:false,
     lastClicks:[],
-  pranks:0,
+    pranks:0,
   timeSpentSeconds: 0,
   };
 
@@ -84,6 +87,15 @@
   // --- UI ---
   function render(){
     countEl.textContent = state.presses;
+    const statPresses = qs('#stat-presses');
+    if(statPresses){
+    statPresses.textContent = state.presses;
+    }
+    const achEl = qs('#stat-achievements');
+    if(achEl){
+    achEl.textContent = state.achievements.length;
+    }
+   
     gamerTagDisplay.textContent = state.gamerTag || 'Welcome';
     visitorGreeting.textContent = 'Hello, ' + (state.gamerTag || 'Traveler');
     // achievements
@@ -417,19 +429,20 @@ function alienContact() {
 
   // --- Init ---
   load();
-applySavedUser();
-initGlobalStats();
-render();
-initParticles();
+  applySavedUser();
+  render();
+  initParticles();
 
   // start time tracking and render initial time
   renderTime(); startTime();
 
   // fetch and display version
-  fetch('version.json').then(r=>r.json()).then(v=>{
+  fetch('version.json?T=' + Date.now()).then(r=>r.json()).then(v=>{
     const el = qs('#version-display'); if(!el) return; el.textContent = 'v' + (v.version || '0.0.0');
     el.addEventListener('click', ()=>{ toast(`Version ${v.version} — build ${v.build}`); });
-  }).catch(()=>{});
+  }).catch(err=>{
+  console.error("Version fetch failed:", err);
+  });
 
   // --- Global stats (Flask API) integration ---
   const API_BASE = '';// relative path assumes same host (serve Flask alongside static files)
@@ -438,9 +451,20 @@ initParticles();
     try{ await fetch(API_BASE + '/api/visit', {method:'POST'}); }catch(e){/*silent fallback*/}
   }
 
-  async function postPress(delta=1){
-    try{ await fetch(API_BASE + '/api/press', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({delta})}); }catch(e){/*fallback handled in updateGlobalPresses*/}
+ async function postPress(delta=1){
+  const res = await fetch(
+    API_BASE + '/api/press',
+    {
+      method:'POST',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({delta})
+    }
+  );
+
+  if(!res.ok){
+    throw new Error("Press update failed");
   }
+}
 
   async function postEvent(type, delta=1){
     try{ await fetch(API_BASE + '/api/event', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type,delta})}); }catch(e){/*silent*/}

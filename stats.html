@@ -19,11 +19,11 @@
       <h2>Live Global Stats 🌍</h2>
 
       <ul>
-        <li>Total Visitors: <span id="world-visitors">0</span></li>
-        <li>Total Presses: <span id="world-presses">0</span></li>
-        <li>Gooses Released: <span id="world-goose">0</span></li>
-        <li>Potatoes Detected: <span id="world-potato">0</span></li>
-        <li>Pranks Triggered: <span id="world-pranks">0</span></li>
+        <li>Total Visitors: <span id="g_world_visitors">0</span></li>
+        <li>Total Presses: <span id="g_world_presses">0</span></li>
+        <li>Gooses Released: <span id="g_world_goose">0</span></li>
+        <li>Potatoes Detected: <span id="g_world_potato">0</span></li>
+        <li>Pranks Triggered: <span id="g_world_pranks">0</span></li>
       </ul>
     </section>
 
@@ -39,11 +39,11 @@ async function fetchStats() {
     const res = await fetch(API_BASE + '/api/stats');
     const data = await res.json();
 
-    document.getElementById("world-visitors").textContent = data.total_visitors || 0;
-    document.getElementById("world-presses").textContent = data.total_presses || 0;
-    document.getElementById("world-goose").textContent = data.gooses_released || 0;
-    document.getElementById("world-potato").textContent = data.potatoes_detected || 0;
-    document.getElementById("world-pranks").textContent = data.prank_events || 0;
+    document.getElementById("g_world_visitors").textContent = data.total_visitors || 0;
+    document.getElementById("g_world_presses").textContent = data.total_presses || 0;
+    document.getElementById("g_world_goose").textContent = data.gooses_released || 0;
+    document.getElementById("g_world_potato").textContent = data.potatoes_detected || 0;
+    document.getElementById("g_world_pranks").textContent = data.prank_events || 0;
 
   } catch (e) {
     console.warn("stats fetch failed", e);
