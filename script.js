@@ -421,10 +421,29 @@ function alienContact() {
   }
 
   // quick reset
-  qs('#reset').onclick = ()=>{ if(confirm('Reset local progress?')){ localStorage.removeItem(STORAGE_KEY); location.reload(); } };
+  const resetBtn = qs('#reset');
+if(resetBtn){
+  resetBtn.onclick = ()=>{
+    if(confirm('Reset local progress?')){
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
+  };
+}
 
-  qs('#achievements-toggle').onclick = ()=>{ qs('#achievements-panel').classList.toggle('hidden'); };
-  qs('#lore-toggle').onclick = ()=>{ qs('#lore-panel').classList.toggle('hidden'); };
+const achBtn = qs('#achievements-toggle');
+if(achBtn){
+  achBtn.onclick = ()=>{
+    qs('#achievements-panel').classList.toggle('hidden');
+  };
+}
+
+const loreBtn = qs('#lore-toggle');
+if(loreBtn){
+  loreBtn.onclick = ()=>{
+    qs('#lore-panel').classList.toggle('hidden');
+  };
+}
   // Stats button toggles the side panel (use body.panel-open for consistent behavior)
   const openStatsBtn = qs('#open-stats');
   const openAchievementsBtn = qs('#open-achievements');
