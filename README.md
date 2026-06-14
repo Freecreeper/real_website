@@ -15,11 +15,14 @@ A single-page polished "mystery" site centered around a giant button. It impleme
 
 How to run
 
-1. Open the folder in your browser (double-click `index.html`) or serve it with a simple static server.
+The Flask server provides both the website and the live stats API:
 
-Quick static server (PowerShell):
+```powershell
+py -m pip install -r requirements.txt
+py server.py
+```
 
-  python -m http.server 8000; if($?) { start http://localhost:8000 }
+Then open `http://localhost:5000`.
 
 Notes
 

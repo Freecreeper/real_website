@@ -80,9 +80,9 @@
     try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch(e){console.warn('save err',e)}
   }
   function applySavedUser() {
-  gamerTagDisplay.textContent = state.gamerTag || "Welcome";
-  visitorGreeting.textContent = "Hello, " + (state.gamerTag || "Traveler");
-}
+    if(gamerTagDisplay) gamerTagDisplay.textContent = state.gamerTag || "Welcome";
+    if(visitorGreeting) visitorGreeting.textContent = "Hello, " + (state.gamerTag || "Traveler");
+  }
 
   // --- UI ---
   function render(){
@@ -125,11 +125,15 @@ if(visitorGreeting){
     achievementsList.appendChild(li);
   }
 }
-    //lore
-    loreList.innerHTML = '';
-    state.loreSeen.forEach(i=>{
-      const d = document.createElement('div'); d.textContent = lore[i]; loreList.appendChild(d);
-    });
+    const statLore = qs('#stat-lore');
+    if(statLore) statLore.textContent = state.loreSeen.length;
+
+    if(loreList){
+      loreList.innerHTML = '';
+      state.loreSeen.forEach(i=>{
+        const d = document.createElement('div'); d.textContent = lore[i]; loreList.appendChild(d);
+      });
+    }
   }
 
   //Toaster ---
@@ -148,7 +152,7 @@ if(visitorGreeting){
         toast(`Achievement unlocked: ${a.title}`);
         showAchievementPopup(a.title);
   // report achievement to global stats
-  postEvent('achievement', 1);
+  postEvent('achievement_unlocks', 1);
       }
     }
   }
@@ -189,14 +193,20 @@ if(visitorGreeting){
   function triggerPrank(){
     state.pranks++;
     save();
-    const choice = pranks[rand(0,pranks.length-1)];
+    let choice = pranks[rand(0,pranks.length-1)];
     // Some pranks have conditions or probabilities
-    if(choice==='rickroll' && Math.random()>0.1) return; // very rare
+    if(choice==='rickroll' && Math.random()>0.1) choice = 'secretReward';
     runPrank(choice);
-  qs('#stat-pranks').textContent = state.pranks;
-  // post event to server where appropriate
-  const mapping = { goose:'goose', potato:'potato', rickroll:'rickroll', alien:'alien'};
-  if(mapping[choice]) postEvent(mapping[choice], 1);
+    const prankStat = qs('#stat-pranks');
+    if(prankStat) prankStat.textContent = state.pranks;
+    postEvent('pranks_triggered', 1);
+    const mapping = {
+      goose:'gooses_released',
+      potato:'potatoes_detected',
+      rickroll:'rickroll_victims',
+      alien:'alien_contacts'
+    };
+    if(mapping[choice]) postEvent(mapping[choice], 1);
   }
 
   // update global presses stored in localStorage
@@ -253,7 +263,7 @@ if(visitorGreeting){
     btn.disabled=true; btn.style.filter='grayscale(60%)';
     setTimeout(()=>{g.style.right='20px'; g.style.transform='rotate(-5deg)';},120);
     setTimeout(()=>{ msgBox.textContent='HONK. The button has been confiscated.'; },900);
-    setTimeout(()=>{ g.style.right='-300px'; btn.disabled=false; btn.style.filter='none'; msgBox.textContent='The goose returned the button, grudgingly.'; g.remove(); qs('#stat-goose').textContent = Number(qs('#stat-goose').textContent||0) + 1; },10000);
+    setTimeout(()=>{ g.style.right='-300px'; btn.disabled=false; btn.style.filter='none'; msgBox.textContent='The goose returned the button, grudgingly.'; g.remove(); },10000);
   }
 
   function prankFakeCall(){
@@ -317,17 +327,6 @@ function alienContact() {
   document.body.appendChild(modal);
 
   function finish(){
-    // LOCAL update (safe)
-    state.pranks = (state.pranks || 0) + 1;
-    save();
-
-    // UI update if exists
-    const el = qs('#stat-potato');
-    if (el) el.textContent = Number(el.textContent || 0) + 1;
-
-    // SERVER update (important for real stats page)
-    postEvent('potato', 1);
-
     modal.remove();
     toast("Potato detection processed 🥔");
   }
@@ -370,8 +369,6 @@ function alienContact() {
     const card = document.createElement('div'); card.className='modal-card glass';
     card.innerHTML=`<h3>Secret Content</h3><iframe width='560' height='315' src='https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1' title='YouTube video' frameborder='0' allow='autoplay; encrypted-media' allowfullscreen style='width:100%;height:240px;border-radius:8px'></iframe>`;
     modal.appendChild(card); document.body.appendChild(modal);
-  // report a rare rickroll victim
-  postEvent('rickroll',1);
   }
 
   
@@ -391,6 +388,45 @@ function alienContact() {
     // minor chance for secret reward
     if(Math.random()<0.005) triggerPrank();
   });
+
+  const openStats = qs('#open-stats');
+  const openAchievements = qs('#open-achievements');
+  const openLeaderboard = qs('#open-leaderboard');
+  const achievementsToggle = qs('#achievements-toggle');
+  const loreToggle = qs('#lore-toggle');
+  const resetButton = qs('#reset');
+  const achievementsPanel = qs('#achievements-panel');
+  const lorePanel = qs('#lore-panel');
+
+  if(openStats) openStats.addEventListener('click', ()=>{ window.location.href = 'stats.html'; });
+  if(openAchievements) openAchievements.addEventListener('click', ()=>{ window.location.href = 'achievements.html'; });
+  if(openLeaderboard) openLeaderboard.addEventListener('click', ()=>{ window.location.href = 'leaderboard.html'; });
+  if(achievementsToggle && achievementsPanel){
+    achievementsToggle.addEventListener('click', ()=>achievementsPanel.classList.toggle('hidden'));
+  }
+  if(loreToggle && lorePanel){
+    loreToggle.addEventListener('click', ()=>lorePanel.classList.toggle('hidden'));
+  }
+  if(resetButton){
+    resetButton.addEventListener('click', ()=>{
+      const gamerTag = state.gamerTag;
+      const humor = state.humor;
+      state = {
+        presses:0,
+        achievements:[],
+        loreSeen:[],
+        gamerTag,
+        humor,
+        lastClicks:[],
+        pranks:0,
+        timeSpentSeconds:0
+      };
+      save();
+      render();
+      renderTime();
+      toast('Your local progress was reset.');
+    });
+  }
 
   // --- Time tracking (session + persisted) ---
   let sessionTimer = null; let sessionSecondsActive = 0; let lastTick = Date.now();
@@ -480,8 +516,11 @@ if(countEl){
     try{ await fetch(API_BASE + '/api/event', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type,delta})}); }catch(e){/*silent*/}
   }
 
-  // call visit once on load
- 
+  // Count one visit per browser tab.
+  if(!sessionStorage.getItem('thebutton:visit-counted')){
+    sessionStorage.setItem('thebutton:visit-counted', '1');
+    postVisit();
+  }
 
   // auto-refresh global stats and animate numbers
   let globalRefreshTimer = null;

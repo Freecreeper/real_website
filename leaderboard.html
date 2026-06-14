@@ -52,16 +52,12 @@ async function loadLeaderboard() {
     body.innerHTML = '';
 
     players.forEach((player,index)=>{
-
-      body.innerHTML += `
-        <tr>
-          <td>${index + 1}</td>
-          <td>${player.name}</td>
-          <td>${player.presses}</td>
-          <td>${player.achievements}</td>
-        </tr>
-      `;
-
+      const row = body.insertRow();
+      [index + 1, player.name, player.presses, player.achievements]
+        .forEach(value => {
+          const cell = row.insertCell();
+          cell.textContent = value;
+        });
     });
 
   } catch(err) {

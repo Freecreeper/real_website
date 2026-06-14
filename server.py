@@ -1,13 +1,33 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory, abort
 from flask_socketio import SocketIO, emit
 import json
 import os
+from threading import Lock
 
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__, static_folder=None)
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-STATS_FILE = "stats.json"
-LEADERBOARD_FILE = "leaderboard.json"
+STATS_FILE = os.path.join(BASE_DIR, "stats.json")
+LEADERBOARD_FILE = os.path.join(BASE_DIR, "leaderboard.json")
+storage_lock = Lock()
+EVENT_KEYS = {
+    "gooses_released",
+    "potatoes_detected",
+    "pranks_triggered",
+    "alien_contacts",
+    "rickroll_victims",
+    "achievement_unlocks",
+}
+PUBLIC_FILES = {
+    "index.html",
+    "achievements.html",
+    "leaderboard.html",
+    "stats.html",
+    "script.js",
+    "style.css",
+    "version.json",
+}
 
 
 # -----------------------
@@ -26,8 +46,11 @@ def load_stats():
             "achievement_unlocks": 0
         }
 
-    with open(STATS_FILE, "r") as f:
-        data = json.load(f)
+    try:
+        with open(STATS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        data = {}
 
     # normalize old saves (important or your file stays broken forever)
     return {
@@ -43,7 +66,7 @@ def load_stats():
 
 
 def save_stats(data):
-    with open(STATS_FILE, "w") as f:
+    with open(STATS_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
 
@@ -55,12 +78,15 @@ def load_leaderboard():
     if not os.path.exists(LEADERBOARD_FILE):
         return {}
 
-    with open(LEADERBOARD_FILE, "r") as f:
-        return json.load(f)
+    try:
+        with open(LEADERBOARD_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
 
 
 def save_leaderboard(data):
-    with open(LEADERBOARD_FILE, "w") as f:
+    with open(LEADERBOARD_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
 
@@ -78,30 +104,22 @@ def broadcast():
 
 @app.post("/api/press")
 def press():
-
-    stats = load_stats()
-
     payload = request.json or {}
-
     delta = payload.get("delta", 1)
-    name = payload.get("name", "Anonymous")
+    name = str(payload.get("name", "Anonymous")).strip()[:32] or "Anonymous"
+    if not isinstance(delta, int) or isinstance(delta, bool) or not 1 <= delta <= 100:
+        return jsonify(error="delta must be an integer from 1 to 100"), 400
 
-    # global presses
-    stats["total_presses"] = stats.get("total_presses", 0) + delta
-    save_stats(stats)
+    with storage_lock:
+        stats = load_stats()
+        stats["total_presses"] = stats.get("total_presses", 0) + delta
+        save_stats(stats)
 
-    # leaderboard update
-    leaderboard = load_leaderboard()
-
-    if name not in leaderboard:
-        leaderboard[name] = {
-            "presses": 0,
-            "achievements": 0
-        }
-
-    leaderboard[name]["presses"] += delta
-
-    save_leaderboard(leaderboard)
+        leaderboard = load_leaderboard()
+        if name not in leaderboard:
+            leaderboard[name] = {"presses": 0, "achievements": 0}
+        leaderboard[name]["presses"] += delta
+        save_leaderboard(leaderboard)
 
     broadcast()
 
@@ -110,12 +128,10 @@ def press():
 
 @app.post("/api/visit")
 def visit():
-
-    stats = load_stats()
-
-    stats["total_visitors"] = stats.get("total_visitors", 0) + 1
-
-    save_stats(stats)
+    with storage_lock:
+        stats = load_stats()
+        stats["total_visitors"] = stats.get("total_visitors", 0) + 1
+        save_stats(stats)
 
     broadcast()
 
@@ -124,17 +140,18 @@ def visit():
 
 @app.post("/api/event")
 def event():
-
-    stats = load_stats()
-
     payload = request.json or {}
-
     event_type = payload.get("type")
     delta = payload.get("delta", 1)
+    if event_type not in EVENT_KEYS:
+        return jsonify(error="unknown event type"), 400
+    if not isinstance(delta, int) or isinstance(delta, bool) or not 1 <= delta <= 100:
+        return jsonify(error="delta must be an integer from 1 to 100"), 400
 
-    stats[event_type] = stats.get(event_type, 0) + delta
-
-    save_stats(stats)
+    with storage_lock:
+        stats = load_stats()
+        stats[event_type] = stats.get(event_type, 0) + delta
+        save_stats(stats)
 
     broadcast()
 
@@ -173,6 +190,18 @@ def leaderboard():
     return jsonify(result)
 
 
+@app.get("/")
+def index():
+    return send_from_directory(BASE_DIR, "index.html")
+
+
+@app.get("/<path:filename>")
+def static_files(filename):
+    if filename not in PUBLIC_FILES:
+        abort(404)
+    return send_from_directory(BASE_DIR, filename)
+
+
 # -----------------------
 # Socket.IO
 # -----------------------
@@ -190,5 +219,6 @@ if __name__ == "__main__":
     socketio.run(
         app,
         host="0.0.0.0",
-        port=5000
+        port=5000,
+        allow_unsafe_werkzeug=True
     )
