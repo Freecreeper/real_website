@@ -27,6 +27,8 @@ PUBLIC_FILES = {
     "index.html",
     "achievements.html",
     "achievements.js",
+    "lore.html",
+    "lore.js",
     "leaderboard.html",
     "stats.html",
     "script.js",

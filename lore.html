@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Button - Lore</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="collection-page">
+  <canvas id="particles"></canvas>
+
+  <header class="topbar">
+    <a href="index.html" class="brand">The Button</a>
+    <nav class="page-nav" aria-label="Main navigation">
+      <a href="index.html">Button</a>
+      <a href="achievements.html">Achievements</a>
+      <a href="lore.html" class="active" aria-current="page">Lore</a>
+      <a href="leaderboard.html">Leaderboard</a>
+      <span id="version-display"></span>
+    </nav>
+  </header>
+
+  <main class="collection-main">
+    <header class="collection-heading">
+      <div>
+        <p class="eyebrow">Recovered records</p>
+        <h1>Button Lore</h1>
+        <p id="lore-summary" class="muted"></p>
+      </div>
+      <div class="achievement-total">
+        <strong id="lore-count">0 / 120</strong>
+        <span>entries discovered</span>
+      </div>
+    </header>
+
+    <div id="lore-entries" class="lore-archive"></div>
+  </main>
+
+  <footer class="footer">
+    <span class="creator-credit">Made by Zane</span>
+  </footer>
+
+  <script src="lore.js"></script>
+</body>
+</html>

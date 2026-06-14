@@ -189,13 +189,14 @@ if(visitorGreeting){
   }
 
   // --- Pranks ---
-  const pranks = ['fakeUpdate','goose','fakeCall','alien','potato','teleport','dvd','secretReward','rickroll'];
+  const pranks = [
+    'fakeUpdate','goose','fakeCall','alien','potato','teleport',
+    'dvd','secretReward','rickroll','rickroll','rickroll'
+  ];
   function triggerPrank(){
     state.pranks++;
     save();
     let choice = pranks[rand(0,pranks.length-1)];
-    // Some pranks have conditions or probabilities
-    if(choice==='rickroll' && Math.random()>0.1) choice = 'secretReward';
     runPrank(choice);
     const prankStat = qs('#stat-pranks');
     if(prankStat) prankStat.textContent = state.pranks;
@@ -406,8 +407,8 @@ function alienContact() {
   const lorePanel = qs('#lore-panel');
 
   if(openStats) openStats.addEventListener('click', ()=>{ window.location.href = 'stats.html'; });
-  if(openAchievements) openAchievements.addEventListener('click', ()=>{ window.location.href = 'achievements.html#achievements'; });
-  if(openLore) openLore.addEventListener('click', ()=>{ window.location.href = 'achievements.html#lore'; });
+  if(openAchievements) openAchievements.addEventListener('click', ()=>{ window.location.href = 'achievements.html'; });
+  if(openLore) openLore.addEventListener('click', ()=>{ window.location.href = 'lore.html'; });
   if(openLeaderboard) openLeaderboard.addEventListener('click', ()=>{ window.location.href = 'leaderboard.html'; });
 
   function showCollectionPanel(panelName){

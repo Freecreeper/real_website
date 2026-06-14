@@ -17,63 +17,81 @@
     }
   }
 
-  function createAchievementCard(title, description, unlocked, exclusive){
-    const card = document.createElement('article');
-    card.className = `achievement-card${unlocked ? ' unlocked' : ' locked'}${exclusive ? ' exclusive' : ''}`;
+  function createAchievementRow(title, description, unlocked, exclusive, progress){
+    const row = document.createElement('article');
+    row.className = `achievement-row${unlocked ? ' unlocked' : ' locked'}${exclusive ? ' exclusive' : ''}`;
 
     const marker = document.createElement('span');
     marker.className = 'achievement-marker';
-    marker.textContent = unlocked ? (exclusive ? '1ST' : 'OK') : '?';
+    marker.textContent = unlocked ? (exclusive ? '1st' : 'Done') : 'Locked';
 
     const copy = document.createElement('div');
+    copy.className = 'achievement-copy';
     const heading = document.createElement('h3');
     const detail = document.createElement('p');
     heading.textContent = title;
     detail.textContent = description;
     copy.append(heading, detail);
-    card.append(marker, copy);
-    return card;
+
+    if(typeof progress === 'number'){
+      const track = document.createElement('div');
+      const fill = document.createElement('span');
+      track.className = 'achievement-progress';
+      fill.style.width = `${Math.min(100, Math.max(0, progress))}%`;
+      track.appendChild(fill);
+      copy.appendChild(track);
+    }
+
+    row.append(copy, marker);
+    return row;
   }
 
   function renderStandard(state){
     const container = document.getElementById('standard-achievements');
     const unlockedIds = new Set(state.achievements || []);
+    const presses = Number(state.presses || 0);
+    let unlockedCount = 0;
     container.replaceChildren(...standardAchievements.map(achievement => {
-      const unlocked = unlockedIds.has(achievement.id) || Number(state.presses || 0) >= achievement.presses;
-      return createAchievementCard(
+      const unlocked = unlockedIds.has(achievement.id) || presses >= achievement.presses;
+      if(unlocked) unlockedCount++;
+      return createAchievementRow(
         achievement.title,
-        `${achievement.presses.toLocaleString()} presses`,
+        unlocked ? `${achievement.presses.toLocaleString()} presses reached` : `${presses.toLocaleString()} / ${achievement.presses.toLocaleString()} presses`,
         unlocked,
-        false
+        false,
+        presses / achievement.presses * 100
       );
     }));
+    document.getElementById('achievement-count').textContent =
+      `${unlockedCount} / ${standardAchievements.length}`;
   }
 
-  function renderWorldFirsts(data, gamerTag){
+  function renderWorldFirsts(data, gamerTag, serverAvailable = true){
     const container = document.getElementById('world-first-achievements');
     const claims = Array.isArray(data.world_firsts) ? data.world_firsts : [];
     const nextMilestone = Number(data.next_world_first_milestone || 5000);
     const cards = claims.map(claim => {
       const owned = claim.name === gamerTag;
-      return createAchievementCard(
+      return createAchievementRow(
         `World First: ${Number(claim.milestone).toLocaleString()}`,
-        owned ? 'Claimed by you. This achievement is yours alone.' : `Claimed by ${claim.name}.`,
+        owned ? 'You are the only owner of this achievement.' : `Owned by ${claim.name}.`,
         owned,
         true
       );
     });
 
-    cards.push(createAchievementCard(
-      `World First: ${nextMilestone.toLocaleString()}`,
-      `Be the first player to reach ${nextMilestone.toLocaleString()} server-recorded presses.`,
+    cards.push(createAchievementRow(
+      `Next: ${nextMilestone.toLocaleString()} presses`,
+      'Unclaimed. First player to reach it on the server wins it permanently.',
       false,
       true
     ));
     container.replaceChildren(...cards);
 
     const ownedCount = claims.filter(claim => claim.name === gamerTag).length;
-    document.getElementById('world-first-status').textContent =
-      ownedCount ? `You own ${ownedCount} exclusive achievement${ownedCount === 1 ? '' : 's'}.` : 'No exclusive wins yet.';
+    document.getElementById('world-first-status').textContent = serverAvailable
+      ? (ownedCount ? `You own ${ownedCount} exclusive achievement${ownedCount === 1 ? '' : 's'}.` : 'No exclusive wins yet.')
+      : 'Server offline - world-first claims are unavailable.';
   }
 
   async function loadServerAchievements(gamerTag){
@@ -123,8 +141,7 @@
   loadServerAchievements(gamerTag)
     .then(data => renderWorldFirsts(data, gamerTag))
     .catch(() => {
-      document.getElementById('world-first-status').textContent = 'Start the Flask server to load world-first achievements.';
-      renderWorldFirsts({world_firsts:[], next_world_first_milestone:5000}, gamerTag);
+      renderWorldFirsts({world_firsts:[], next_world_first_milestone:5000}, gamerTag, false);
     });
 
   fetch(`version.json?t=${Date.now()}`)

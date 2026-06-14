@@ -12,34 +12,47 @@
 
   <header class="topbar">
     <a href="index.html" class="brand">The Button</a>
-    <div class="stats-mini">
-      <a href="index.html" class="pill">Back</a>
-      <a href="leaderboard.html" class="pill">Leaderboard</a>
+    <nav class="page-nav" aria-label="Main navigation">
+      <a href="index.html">Button</a>
+      <a href="achievements.html" class="active" aria-current="page">Achievements</a>
+      <a href="lore.html">Lore</a>
+      <a href="leaderboard.html">Leaderboard</a>
       <span id="version-display"></span>
-    </div>
+    </nav>
   </header>
 
   <main class="achievements-main">
     <header class="achievements-heading">
-      <p class="eyebrow">Your collection</p>
-      <h1>Achievements</h1>
-      <p id="achievement-summary" class="muted">Loading your progress...</p>
+      <div>
+        <p class="eyebrow">Player record</p>
+        <h1>Achievements</h1>
+        <p id="achievement-summary" class="muted">Loading your progress...</p>
+      </div>
+      <div class="achievement-total">
+        <strong id="achievement-count">0 / 6</strong>
+        <span>standard unlocked</span>
+      </div>
     </header>
 
-    <section aria-labelledby="standard-title">
-      <h2 id="standard-title">Press Milestones</h2>
-      <div id="standard-achievements" class="achievement-grid"></div>
-    </section>
-
-    <section aria-labelledby="world-first-title">
+    <section class="achievement-section" aria-labelledby="standard-title">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">One winner per milestone</p>
-          <h2 id="world-first-title">World Firsts</h2>
+          <p class="eyebrow">Permanent progress</p>
+          <h2 id="standard-title">Press milestones</h2>
+        </div>
+      </div>
+      <div id="standard-achievements" class="achievement-list"></div>
+    </section>
+
+    <section class="achievement-section exclusive-section" aria-labelledby="world-first-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">One owner worldwide</p>
+          <h2 id="world-first-title">World firsts</h2>
         </div>
         <span id="world-first-status" class="muted"></span>
       </div>
-      <div id="world-first-achievements" class="achievement-grid exclusive-grid"></div>
+      <div id="world-first-achievements" class="achievement-list"></div>
     </section>
   </main>
 
