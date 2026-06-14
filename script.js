@@ -86,7 +86,9 @@
 
   // --- UI ---
   function render(){
-    countEl.textContent = state.presses;
+    if(countEl){
+      countEl.textContent = state.presses;
+    }
     const statPresses = qs('#stat-presses');
     if(statPresses){
     statPresses.textContent = state.presses;
@@ -96,8 +98,13 @@
     achEl.textContent = state.achievements.length;
     }
    
-    gamerTagDisplay.textContent = state.gamerTag || 'Welcome';
-    visitorGreeting.textContent = 'Hello, ' + (state.gamerTag || 'Traveler');
+ if(gamerTagDisplay){
+  gamerTagDisplay.textContent = state.gamerTag || 'Welcome';
+}
+
+if(visitorGreeting){
+  visitorGreeting.textContent = 'Hello, ' + (state.gamerTag || 'Traveler');
+}
     // achievements
    if(achievementsList){
 
@@ -419,47 +426,7 @@ function alienContact() {
       if(Notification.permission==='granted') new Notification('🚨 Goose Alert', {body:'A goose may be nearby.'});
     }, 8000 + rand(0,8000));
   }
-
-  // quick reset
-  const resetBtn = qs('#reset');
-if(resetBtn){
-  resetBtn.onclick = ()=>{
-    if(confirm('Reset local progress?')){
-      localStorage.removeItem(STORAGE_KEY);
-      location.reload();
-    }
-  };
-}
-
-const achBtn = qs('#achievements-toggle');
-if(achBtn){
-  achBtn.onclick = ()=>{
-    qs('#achievements-panel').classList.toggle('hidden');
-  };
-}
-
-const loreBtn = qs('#lore-toggle');
-if(loreBtn){
-  loreBtn.onclick = ()=>{
-    qs('#lore-panel').classList.toggle('hidden');
-  };
-}
-  // Stats button toggles the side panel (use body.panel-open for consistent behavior)
-  const openStatsBtn = qs('#open-stats');
-  const openAchievementsBtn = qs('#open-achievements');
-  const openLeaderboardBtn = qs('#open-leaderboard');
-  if(openStatsBtn){
-  openStatsBtn.addEventListener('click', ()=>{ window.location.href = 'stats.html'; });
-  }
-  if(openLeaderboardBtn){
-    openLeaderboardBtn.addEventListener('click', ()=>{ window.location.href = 'leaderboard.html'; });
-  }
-  if(openAchievementsBtn){
-  openAchievementsBtn.addEventListener('click', ()=>{
-    window.location.href = 'achievements.html';
-  });
-}
-
+countEl.textContent = state.presses;
   // --- Particles background (simple) ---
   function initParticles(){
     const canvas = document.getElementById('particles'); const ctx = canvas.getContext('2d'); function resize(){canvas.width=innerWidth;canvas.height=innerHeight;} window.addEventListener('resize',resize); resize();
