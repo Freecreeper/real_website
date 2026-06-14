@@ -99,13 +99,25 @@
     gamerTagDisplay.textContent = state.gamerTag || 'Welcome';
     visitorGreeting.textContent = 'Hello, ' + (state.gamerTag || 'Traveler');
     // achievements
-    achievementsList.innerHTML = '';
-    for(const a of achievementDefs){
-      const li = document.createElement('li');
-      li.textContent = `${a.title} — ${a.n} clicks`;
-      if(state.achievements.includes(a.id)) li.style.opacity = '1'; else li.style.opacity='0.5';
-      achievementsList.appendChild(li);
-    }
+   if(achievementsList){
+
+  achievementsList.innerHTML = '';
+
+  for(const a of achievementDefs){
+
+    const li = document.createElement('li');
+
+    li.textContent =
+      `${a.title} — ${a.n} clicks`;
+
+    if(state.achievements.includes(a.id))
+      li.style.opacity = '1';
+    else
+      li.style.opacity = '0.5';
+
+    achievementsList.appendChild(li);
+  }
+}
     // lore
     loreList.innerHTML = '';
     state.loreSeen.forEach(i=>{
@@ -415,6 +427,7 @@ function alienContact() {
   qs('#lore-toggle').onclick = ()=>{ qs('#lore-panel').classList.toggle('hidden'); };
   // Stats button toggles the side panel (use body.panel-open for consistent behavior)
   const openStatsBtn = qs('#open-stats');
+  const openAchievementsBtn = qs('#open-achievements');
   const openLeaderboardBtn = qs('#open-leaderboard');
   if(openStatsBtn){
   openStatsBtn.addEventListener('click', ()=>{ window.location.href = 'stats.html'; });
@@ -422,6 +435,11 @@ function alienContact() {
   if(openLeaderboardBtn){
     openLeaderboardBtn.addEventListener('click', ()=>{ window.location.href = 'leaderboard.html'; });
   }
+  if(openAchievementsBtn){
+  openAchievementsBtn.addEventListener('click', ()=>{
+    window.location.href = 'achievements.html';
+  });
+}
 
   // --- Particles background (simple) ---
   function initParticles(){
