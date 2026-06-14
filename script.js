@@ -125,14 +125,14 @@ if(visitorGreeting){
     achievementsList.appendChild(li);
   }
 }
-    // lore
+    //lore
     loreList.innerHTML = '';
     state.loreSeen.forEach(i=>{
       const d = document.createElement('div'); d.textContent = lore[i]; loreList.appendChild(d);
     });
   }
 
-  // --- Toaster ---
+  //Toaster ---
   function toast(text, opts={time:3500}){
     const t = document.createElement('div'); t.className='toast'; t.textContent = text;
     toastArea.appendChild(t);
@@ -185,18 +185,17 @@ if(visitorGreeting){
   }
 
   // --- Pranks ---
-  const pranks = ['fakeUpdate','goose','fakeCall','alien','potato','teleport','dvd','secretReward','rickroll','bossFight'];
+  const pranks = ['fakeUpdate','goose','fakeCall','alien','potato','teleport','dvd','secretReward','rickroll'];
   function triggerPrank(){
     state.pranks++;
     save();
     const choice = pranks[rand(0,pranks.length-1)];
     // Some pranks have conditions or probabilities
-    if(choice==='rickroll' && Math.random()>0.01) return; // very rare
-    if(choice==='bossFight' && state.presses<50) return; // unlock later
+    if(choice==='rickroll' && Math.random()>0.1) return; // very rare
     runPrank(choice);
   qs('#stat-pranks').textContent = state.pranks;
   // post event to server where appropriate
-  const mapping = { goose:'goose', potato:'potato', rickroll:'rickroll', alien:'alien', bossFight:'button_prime' };
+  const mapping = { goose:'goose', potato:'potato', rickroll:'rickroll', alien:'alien'};
   if(mapping[choice]) postEvent(mapping[choice], 1);
   }
 
@@ -225,7 +224,6 @@ if(visitorGreeting){
       case 'dvd': prankDVD(); break;
       case 'secretReward': prankSecretReward(); break;
       case 'rickroll': prankRickroll(); break;
-      case 'bossFight': prankBossFight(); break;
       default: toast('Something strange happened.');
     }
   }
@@ -426,7 +424,9 @@ function alienContact() {
       if(Notification.permission==='granted') new Notification('🚨 Goose Alert', {body:'A goose may be nearby.'});
     }, 8000 + rand(0,8000));
   }
-countEl.textContent = state.presses;
+if(countEl){
+  countEl.textContent = state.presses;
+}
   // --- Particles background (simple) ---
   function initParticles(){
     const canvas = document.getElementById('particles'); const ctx = canvas.getContext('2d'); function resize(){canvas.width=innerWidth;canvas.height=innerHeight;} window.addEventListener('resize',resize); resize();
