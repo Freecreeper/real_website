@@ -3,75 +3,44 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>The Button — Press If You Dare</title>
+  <title>The Button - Achievements</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 
-<body>
+<body class="achievements-page">
   <canvas id="particles"></canvas>
 
   <header class="topbar">
-    <div class="brand">The Button</div>
+    <a href="index.html" class="brand">The Button</a>
     <div class="stats-mini">
-      <span id="visitor-greeting">Welcome.</span>
-      <button id="open-stats" class="pill">Stats</button>
-      <button id="open-leaderboard" class="pill">
-      Leaderboard
-      </button>
+      <a href="index.html" class="pill">Back</a>
+      <a href="leaderboard.html" class="pill">Leaderboard</a>
       <span id="version-display"></span>
     </div>
   </header>
 
-  <main class="stage">
-    <section class="center-card">
-      <div class="glass card">
+  <main class="achievements-main">
+    <header class="achievements-heading">
+      <p class="eyebrow">Your collection</p>
+      <h1>Achievements</h1>
+      <p id="achievement-summary" class="muted">Loading your progress...</p>
+    </header>
 
-        <h1 id="gamer-tag-display">Welcome</h1>
-        <p id="subtext">Press the button. See what happens.</p>
-
-        <div class="button-wrap">
-          <button id="the-button" class="giant">THE BUTTON</button>
-          <div class="counter">Presses: <span id="count">0</span></div>
-        </div>
-
-        <div id="message-box">Be brave. Press the button.</div>
-
-        <div class="controls" role="tablist" aria-label="Collection view">
-          <button id="achievements-toggle" class="pill active" role="tab" aria-controls="achievements-panel" aria-selected="true">Achievements</button>
-          <button id="lore-toggle" class="pill" role="tab" aria-controls="lore-panel" aria-selected="false">Lore</button>
-          <button id="reset" class="pill danger">Reset</button>
-        </div>
-
-      </div>
+    <section aria-labelledby="standard-title">
+      <h2 id="standard-title">Press Milestones</h2>
+      <div id="standard-achievements" class="achievement-grid"></div>
     </section>
 
-    <!-- LOCAL stats only (NOT global) -->
-    <aside class="panel">
-      <div class="glass side-card">
-        <h3>Your Stats</h3>
-
-        <ul>
-          <li>Time on site: <span id="stat-time">0s</span></li>
-          <li>Your Presses: <span id="stat-presses">0</span></li>
-          <li>Achievements: <span id="stat-achievements">0</span></li>
-          <li>Lore: <span id="stat-lore">0</span></li>
-          <li>Pranks: <span id="stat-pranks">0</span></li>
-        </ul>
-
-        <hr />
-
-        <div id="achievements-panel">
-          <h4>Achievements</h4>
-          <ul id="achievements-list"></ul>
+    <section aria-labelledby="world-first-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">One winner per milestone</p>
+          <h2 id="world-first-title">World Firsts</h2>
         </div>
-
-        <div id="lore-panel" class="hidden">
-          <h4>Lore</h4>
-          <div id="lore-list"></div>
-        </div>
+        <span id="world-first-status" class="muted"></span>
       </div>
-    </aside>
-
+      <div id="world-first-achievements" class="achievement-grid exclusive-grid"></div>
+    </section>
   </main>
 
   <div id="toast-area"></div>
@@ -80,24 +49,6 @@
     <span class="creator-credit">Made by Zane</span>
   </footer>
 
-  <!-- onboarding -->
-  <div id="onboard" class="modal">
-    <div class="modal-card glass">
-      <h2>Welcome</h2>
-
-      <input id="gamer-tag" placeholder="Gamer Tag" maxlength="32" />
-
-      <label>
-        <input id="humor-toggle" type="checkbox" />
-        Enable Chaos Mode
-      </label>
-
-      <button id="accept-onboard" class="pill primary">
-        Accept
-      </button>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
+  <script src="achievements.js"></script>
 </body>
 </html>

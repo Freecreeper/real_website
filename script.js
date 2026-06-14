@@ -212,7 +212,13 @@ if(visitorGreeting){
   // update global presses stored in localStorage
   function updateGlobalPresses(delta=1){
     // attempt to post to server; fallback to localStorage
-    postPress(delta).catch(()=>{
+    postPress(delta).then(data=>{
+      for(const award of data.new_world_firsts || []){
+        const title = `World First: ${Number(award.milestone).toLocaleString()} presses`;
+        toast(`Exclusive achievement unlocked: ${title}`, {time:6000});
+        showAchievementPopup(title);
+      }
+    }).catch(()=>{
       const k='thebutton:global';
       try{
         const g = JSON.parse(localStorage.getItem(k)) || {visitors:1,presses:0,goose:0,potato:0,pranks:0};
@@ -538,6 +544,7 @@ if(countEl){
   if(!res.ok){
     throw new Error("Press update failed");
   }
+  return res.json();
 }
 
   async function postEvent(type, delta=1){

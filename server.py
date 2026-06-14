@@ -3,6 +3,7 @@ from flask_socketio import SocketIO, emit
 import json
 import os
 from threading import Lock
+from datetime import datetime, timezone
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, static_folder=None)
@@ -10,7 +11,10 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 STATS_FILE = os.path.join(BASE_DIR, "stats.json")
 LEADERBOARD_FILE = os.path.join(BASE_DIR, "leaderboard.json")
+WORLD_FIRSTS_FILE = os.path.join(BASE_DIR, "world_firsts.json")
 storage_lock = Lock()
+STANDARD_ACHIEVEMENT_MILESTONES = (10, 25, 50, 100, 500, 1000)
+WORLD_FIRST_INTERVAL = 5000
 EVENT_KEYS = {
     "gooses_released",
     "potatoes_detected",
@@ -22,6 +26,7 @@ EVENT_KEYS = {
 PUBLIC_FILES = {
     "index.html",
     "achievements.html",
+    "achievements.js",
     "leaderboard.html",
     "stats.html",
     "script.js",
@@ -90,6 +95,27 @@ def save_leaderboard(data):
         json.dump(data, f, indent=2)
 
 
+def load_world_firsts():
+    if not os.path.exists(WORLD_FIRSTS_FILE):
+        return {}
+
+    try:
+        with open(WORLD_FIRSTS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def save_world_firsts(data):
+    with open(WORLD_FIRSTS_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+
+def achievement_count(presses, exclusive_achievements):
+    standard_count = sum(presses >= milestone for milestone in STANDARD_ACHIEVEMENT_MILESTONES)
+    return standard_count + len(exclusive_achievements)
+
+
 # -----------------------
 # Live Updates
 # -----------------------
@@ -110,6 +136,7 @@ def press():
     if not isinstance(delta, int) or isinstance(delta, bool) or not 1 <= delta <= 100:
         return jsonify(error="delta must be an integer from 1 to 100"), 400
 
+    new_world_firsts = []
     with storage_lock:
         stats = load_stats()
         stats["total_presses"] = stats.get("total_presses", 0) + delta
@@ -117,13 +144,47 @@ def press():
 
         leaderboard = load_leaderboard()
         if name not in leaderboard:
-            leaderboard[name] = {"presses": 0, "achievements": 0}
-        leaderboard[name]["presses"] += delta
+            leaderboard[name] = {
+                "presses": 0,
+                "achievements": 0,
+                "exclusive_achievements": []
+            }
+
+        player = leaderboard[name]
+        player.setdefault("exclusive_achievements", [])
+        previous_presses = int(player.get("presses", 0))
+        player["presses"] = previous_presses + delta
+
+        world_firsts = load_world_firsts()
+        first_milestone = ((previous_presses // WORLD_FIRST_INTERVAL) + 1) * WORLD_FIRST_INTERVAL
+        for milestone in range(first_milestone, player["presses"] + 1, WORLD_FIRST_INTERVAL):
+            milestone_key = str(milestone)
+            if milestone_key in world_firsts:
+                continue
+
+            claim = {
+                "milestone": milestone,
+                "name": name,
+                "claimed_at": datetime.now(timezone.utc).isoformat()
+            }
+            world_firsts[milestone_key] = claim
+            player["exclusive_achievements"].append(milestone)
+            new_world_firsts.append(claim)
+
+        player["achievements"] = achievement_count(
+            player["presses"],
+            player["exclusive_achievements"]
+        )
+        save_world_firsts(world_firsts)
         save_leaderboard(leaderboard)
 
     broadcast()
 
-    return jsonify(ok=True)
+    return jsonify(
+        ok=True,
+        player_presses=player["presses"],
+        new_world_firsts=new_world_firsts
+    )
 
 
 @app.post("/api/visit")
@@ -188,6 +249,32 @@ def leaderboard():
         })
 
     return jsonify(result)
+
+
+@app.get("/api/achievements")
+def achievements():
+    name = str(request.args.get("name", "Anonymous")).strip()[:32] or "Anonymous"
+    with storage_lock:
+        leaderboard_data = load_leaderboard()
+        world_firsts = load_world_firsts()
+
+    player = leaderboard_data.get(name, {})
+    ordered_claims = sorted(
+        world_firsts.values(),
+        key=lambda claim: int(claim["milestone"])
+    )
+    claimed_milestones = {int(milestone) for milestone in world_firsts}
+    next_milestone = WORLD_FIRST_INTERVAL
+    while next_milestone in claimed_milestones:
+        next_milestone += WORLD_FIRST_INTERVAL
+
+    return jsonify(
+        name=name,
+        presses=int(player.get("presses", 0)),
+        exclusive_achievements=player.get("exclusive_achievements", []),
+        world_firsts=ordered_claims,
+        next_world_first_milestone=next_milestone
+    )
 
 
 @app.get("/")

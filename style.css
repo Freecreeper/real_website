@@ -100,7 +100,37 @@ body.panel-open .panel{display:flex;animation:slideIn 260ms ease;}
 
 .footer{position:fixed;left:12px;right:12px;bottom:12px;display:flex;justify-content:flex-end;z-index:60;pointer-events:none}
 .version{background:rgba(255,255,255,0.02);padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);color:var(--muted);font-size:13px}
-.creator-credit{color:rgba(255,255,255,0.5);font-size:12px}
+.creator-credit{color:rgba(255,255,255,0.22);font-size:12px}
+
+/* Dedicated achievements page */
+.achievements-page{overflow:auto}
+.achievements-page .brand{position:relative;text-decoration:none;z-index:1}
+.achievements-main{position:relative;z-index:1;width:min(1000px,calc(100% - 32px));margin:0 auto;padding:110px 0 80px}
+.achievements-heading{margin-bottom:42px}
+.achievements-heading h1{margin:4px 0 8px;font-size:42px;letter-spacing:0}
+.eyebrow{margin:0;color:var(--accent);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0}
+.muted{color:var(--muted)}
+.achievements-main section+section{margin-top:48px}
+.achievements-main h2{margin:0 0 18px;font-size:22px;letter-spacing:0}
+.section-heading{display:flex;justify-content:space-between;align-items:end;gap:20px;margin-bottom:18px}
+.section-heading h2{margin:4px 0 0}
+.achievement-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.achievement-card{display:flex;align-items:center;gap:14px;min-height:92px;padding:16px;border:1px solid var(--glass-border);border-radius:8px;background:rgba(255,255,255,0.025)}
+.achievement-card h3{margin:0 0 5px;font-size:16px;letter-spacing:0}
+.achievement-card p{margin:0;color:var(--muted);font-size:13px;line-height:1.4}
+.achievement-card.locked{opacity:.48}
+.achievement-card.unlocked{border-color:rgba(124,242,255,.32);background:rgba(124,242,255,.06)}
+.achievement-card.exclusive.unlocked{border-color:rgba(255,215,96,.5);background:rgba(255,215,96,.06)}
+.achievement-marker{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;border:1px solid rgba(255,255,255,.14);border-radius:50%;font-size:11px;font-weight:900;color:var(--muted)}
+.achievement-card.unlocked .achievement-marker{border-color:var(--accent);color:var(--accent)}
+.achievement-card.exclusive.unlocked .achievement-marker{border-color:#ffd760;color:#ffd760}
+
+@media (max-width:680px){
+  .achievements-main{padding-top:130px}
+  .achievements-heading h1{font-size:34px}
+  .achievement-grid{grid-template-columns:1fr}
+  .section-heading{align-items:start;flex-direction:column}
+}
 
 /* Global statistics floating panel */
 #global-stats-panel{backdrop-filter:blur(8px);border:1px solid var(--glass-border);padding:14px;border-radius:12px;box-shadow:0 10px 40px rgba(0,0,0,0.6)}
