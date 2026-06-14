@@ -36,9 +36,9 @@
 
         <div id="message-box">Be brave. Press the button.</div>
 
-        <div class="controls">
-          <button id="achievements-toggle" class="pill">Achievements</button>
-          <button id="lore-toggle" class="pill">Lore</button>
+        <div class="controls" role="tablist" aria-label="Collection view">
+          <button id="achievements-toggle" class="pill active" role="tab" aria-controls="achievements-panel" aria-selected="true">Achievements</button>
+          <button id="lore-toggle" class="pill" role="tab" aria-controls="lore-panel" aria-selected="false">Lore</button>
           <button id="reset" class="pill danger">Reset</button>
         </div>
 
@@ -75,6 +75,10 @@
   </main>
 
   <div id="toast-area"></div>
+
+  <footer class="footer">
+    <span class="creator-credit">Made by Zane</span>
+  </footer>
 
   <!-- onboarding -->
   <div id="onboard" class="modal">

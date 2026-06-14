@@ -391,6 +391,7 @@ function alienContact() {
 
   const openStats = qs('#open-stats');
   const openAchievements = qs('#open-achievements');
+  const openLore = qs('#open-lore');
   const openLeaderboard = qs('#open-leaderboard');
   const achievementsToggle = qs('#achievements-toggle');
   const loreToggle = qs('#lore-toggle');
@@ -399,13 +400,38 @@ function alienContact() {
   const lorePanel = qs('#lore-panel');
 
   if(openStats) openStats.addEventListener('click', ()=>{ window.location.href = 'stats.html'; });
-  if(openAchievements) openAchievements.addEventListener('click', ()=>{ window.location.href = 'achievements.html'; });
+  if(openAchievements) openAchievements.addEventListener('click', ()=>{ window.location.href = 'achievements.html#achievements'; });
+  if(openLore) openLore.addEventListener('click', ()=>{ window.location.href = 'achievements.html#lore'; });
   if(openLeaderboard) openLeaderboard.addEventListener('click', ()=>{ window.location.href = 'leaderboard.html'; });
-  if(achievementsToggle && achievementsPanel){
-    achievementsToggle.addEventListener('click', ()=>achievementsPanel.classList.toggle('hidden'));
+
+  function showCollectionPanel(panelName){
+    if(!achievementsPanel || !lorePanel) return;
+    const showLore = panelName === 'lore';
+    achievementsPanel.classList.toggle('hidden', showLore);
+    lorePanel.classList.toggle('hidden', !showLore);
+    if(achievementsToggle){
+      achievementsToggle.classList.toggle('active', !showLore);
+      achievementsToggle.setAttribute('aria-selected', String(!showLore));
+    }
+    if(loreToggle){
+      loreToggle.classList.toggle('active', showLore);
+      loreToggle.setAttribute('aria-selected', String(showLore));
+    }
   }
-  if(loreToggle && lorePanel){
-    loreToggle.addEventListener('click', ()=>lorePanel.classList.toggle('hidden'));
+
+  if(achievementsToggle && loreToggle){
+    achievementsToggle.addEventListener('click', ()=>{
+      history.replaceState(null, '', '#achievements');
+      showCollectionPanel('achievements');
+    });
+    loreToggle.addEventListener('click', ()=>{
+      history.replaceState(null, '', '#lore');
+      showCollectionPanel('lore');
+    });
+    showCollectionPanel(window.location.hash === '#lore' ? 'lore' : 'achievements');
+    window.addEventListener('hashchange', ()=>{
+      showCollectionPanel(window.location.hash === '#lore' ? 'lore' : 'achievements');
+    });
   }
   if(resetButton){
     resetButton.addEventListener('click', ()=>{
@@ -481,7 +507,9 @@ if(countEl){
 
   // fetch and display version
   fetch('version.json?T=' + Date.now()).then(r=>r.json()).then(v=>{
-    const el = qs('#version-display'); if(!el) return; el.textContent = 'v' + (v.version || '0.0.0');
+    const el = qs('#version-display'); if(!el) return;
+    const buildNumber = String(v.build || 'unknown').split('-').pop();
+    el.textContent = `v${v.version || '0.0.0'} b${buildNumber}`;
     el.addEventListener('click', ()=>{ toast(`Version ${v.version} — build ${v.build}`); });
   }).catch(err=>{
   console.error("Version fetch failed:", err);
