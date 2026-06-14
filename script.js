@@ -242,7 +242,7 @@
   function prankFakeCall(){
     const modal = document.createElement('div'); modal.className='modal';
     const card = document.createElement('div'); card.className='modal-card glass';
-    card.innerHTML = `<h3>Incoming Call — Mom</h3><p class='muted'>Caller ID: Mom</p>
+    card.innerHTML = `<h3>Incoming Call — friend</h3><p class='muted'>Caller ID: friend</p>
       <div style='display:flex;gap:8px;justify-content:center;margin-top:10px'><button id='call-answer' class='pill primary'>Answer</button><button id='call-decline' class='pill'>Decline</button></div>`;
     modal.appendChild(card); document.body.appendChild(modal);
     function finish(){ modal.remove(); toast('Voicemail: Stop pressing that button.'); }
@@ -477,9 +477,7 @@ function alienContact() {
   }
 
   // call visit once on load
-  if (!window.location.pathname.includes("stats.html")) {
-  postVisit();
-}
+ 
 
   // auto-refresh global stats and animate numbers
   let globalRefreshTimer = null;
