@@ -371,12 +371,35 @@ function alienContact() {
     card.querySelector('#claim').onclick = ()=>{ card.querySelector('p').textContent='Processing...'; setTimeout(()=>{card.querySelector('p').textContent='Congratulations. You won absolutely nothing.'; card.querySelector('#claim').remove(); setTimeout(()=>modal.remove(),2200);},1600); };
   }
 
-  function prankRickroll(){
-    const modal = document.createElement('div'); modal.className='modal';
-    const card = document.createElement('div'); card.className='modal-card glass';
-    card.innerHTML=`<h3>Secret Content</h3><iframe width='560' height='315' src='https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1' title='YouTube video' frameborder='0' allow='autoplay; encrypted-media' allowfullscreen style='width:100%;height:240px;border-radius:8px'></iframe>`;
-    modal.appendChild(card); document.body.appendChild(modal);
-  }
+ function prankRickroll() {
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+
+  const card = document.createElement('div');
+  card.className = 'modal-card glass';
+
+  card.innerHTML = `
+    <h3>Secret Content</h3>
+    <iframe
+      width="560"
+      height="315"
+      src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1"
+      title="YouTube video"
+      frameborder="0"
+      allow="autoplay; encrypted-media"
+      allowfullscreen
+      style="width:100%;height:240px;border-radius:8px">
+    </iframe>
+  `;
+
+  modal.appendChild(card);
+  document.body.appendChild(modal);
+
+  // Remove after 6 seconds
+  setTimeout(() => {
+    modal.remove();
+  }, 6000);
+}
 
   
 
