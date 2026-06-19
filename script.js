@@ -36,7 +36,16 @@
     pranks:0,
   timeSpentSeconds: 0,
   };
+  
+document.addEventListener('touchend', e => {
+  const now = Date.now();
 
+  if (now - lastTouch <= 300) {
+    e.preventDefault();
+  }
+
+  lastTouch = now;
+}, { passive: false });
   // --- Data ---
   const messages = [
     'please dont.', 'Interesting choice.','You could be doing homework.','The button appreciates your loyalty.','Your click has been recorded for scientific purposes.','Productivity levels unchanged.','The Department of Button Affairs has been notified.','Your FBI agent is taking notes.','That felt nice, didn\'t it?','A brief moment of joy was added to the universe.','You are now 0.001% closer to a secret.'
@@ -113,6 +122,13 @@
  if(gamerTagDisplay){
   gamerTagDisplay.textContent = state.gamerTag || 'Welcome';
 }
+
+
+let lastTouch = 0;
+
+
+
+
 
 if(visitorGreeting){
   visitorGreeting.textContent = 'Hello, ' + (state.gamerTag || 'Traveler');
@@ -241,7 +257,11 @@ if(visitorGreeting){
       }catch(e){console.warn('global update err',e)}
     });
   }
-
+  if ('ongesturestart' in window) {
+  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('gesturechange', e => e.preventDefault());
+  document.addEventListener('gestureend', e => e.preventDefault());
+}
   function runPrank(name){
     switch(name){
       case 'fakeUpdate': prankFakeUpdate(); break;
@@ -428,8 +448,7 @@ function alienContact() {
   overlay.style.height = '100vh';
   overlay.style.zIndex = '999999';
   overlay.style.pointerEvents = 'none';
-  overlay.style.background =
-    'url(C:\\sourse\\real_website\\[CITYPNG.COM]HD Broken Crack Glass Mirror Effect Transparent PNG - 8000x8000.png) center/cover no-repeat';
+  overlay.style.background ="url('images/broken.png') center/cover no-repeat";
   overlay.style.opacity = '0';
 
   document.body.appendChild(overlay);
