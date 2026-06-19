@@ -51,7 +51,19 @@
       'It once convinced a lighthouse to change careers.',
       'Do not let the Button near a blender.',
       'The Button hums softly at 3:14am.',
-      'A once-famous poet wrote an ode to the Button in invisible ink.'
+      'A once-famous poet wrote an ode to the Button in invisible ink.',
+      'The Button is not responsible for any broken screens.',
+      'The Button has a secret life as a DJ.',
+      'The Button once won a dance-off against a washing machine.',
+      'The Button is banned from all dance floors.',
+      'The Button has a collection of 90s memes.',
+      'The Button is secretly a cat person.',
+      'The Button once tried to start a band called "The Button Mashers".',
+      'The Button is a master of disguise.',
+      'The Button is secretly a superhero.',
+      'The Button is also a time traveler.',
+      'The Button has a pet goldfish named "Bubbles".',
+      'The button likes artists like GRAHAM and Noah Kahan.'
     ];
     const out = [];
     for(let i=0;i<120;i++){
@@ -191,7 +203,7 @@ if(visitorGreeting){
   // --- Pranks ---
   const pranks = [
     'fakeUpdate','goose','fakeCall','alien','potato','teleport',
-    'dvd','secretReward','rickroll','rickroll','rickroll'
+    'dvd','secretReward','rickroll','rickroll','rickroll','brokenScreen'
   ];
   function triggerPrank(){
     state.pranks++;
@@ -241,6 +253,7 @@ if(visitorGreeting){
       case 'dvd': prankDVD(); break;
       case 'secretReward': prankSecretReward(); break;
       case 'rickroll': prankRickroll(); break;
+      case 'brokenScreen': prankBrokenScreen(); break;
       default: toast('Something strange happened.');
     }
   }
@@ -265,7 +278,7 @@ if(visitorGreeting){
 
   function prankGoose(){
     // create goose img (simple animated div)
-    const g = document.createElement('div'); g.style.position='fixed'; g.style.zIndex=1000; g.style.width='160px'; g.style.height='100px'; g.style.right='-200px'; g.style.bottom='120px'; g.style.background='url(https://i.imgur.com/6bKQZKp.png) center/contain no-repeat'; g.style.transition='right 900ms ease, transform 900ms'; document.body.appendChild(g);
+    const g = document.createElement('div'); g.style.position='fixed'; g.style.zIndex=1000; g.style.width='160px'; g.style.height='100px'; g.style.right='-200px'; g.style.bottom='120px'; g.style.background='url(C:\\sourse\\real_website\\Goose_on_white_background_03.png) center/contain no-repeat'; g.style.transition='right 900ms ease, transform 900ms'; document.body.appendChild(g);
     // steal button
     btn.disabled=true; btn.style.filter='grayscale(60%)';
     setTimeout(()=>{g.style.right='20px'; g.style.transform='rotate(-5deg)';},120);
@@ -401,7 +414,45 @@ function alienContact() {
   }, 6000);
 }
 
-  
+  function prankBrokenScreen() {
+  // Prevent multiple overlays
+  if (document.getElementById('broken-screen-overlay')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'broken-screen-overlay';
+
+  overlay.style.position = 'fixed';
+  overlay.style.top = '0';
+  overlay.style.left = '0';
+  overlay.style.width = '100vw';
+  overlay.style.height = '100vh';
+  overlay.style.zIndex = '999999';
+  overlay.style.pointerEvents = 'none';
+  overlay.style.background =
+    'url(C:\\sourse\\real_website\\[CITYPNG.COM]HD Broken Crack Glass Mirror Effect Transparent PNG - 8000x8000.png) center/cover no-repeat';
+  overlay.style.opacity = '0';
+
+  document.body.appendChild(overlay);
+
+  // Little flash for extra panic 😈
+  document.body.style.transition = 'filter 100ms';
+  document.body.style.filter = 'brightness(1.3)';
+
+  setTimeout(() => {
+    document.body.style.filter = '';
+    overlay.style.transition = 'opacity 150ms';
+    overlay.style.opacity = '1';
+  }, 100);
+
+  // Remove after 6 seconds
+  setTimeout(() => {
+    overlay.style.opacity = '0';
+
+    setTimeout(() => {
+      overlay.remove();
+    }, 200);
+  }, 6000);
+}
 
   // --- Button click handler ---
   btn.addEventListener('click', ()=>{
