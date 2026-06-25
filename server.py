@@ -200,6 +200,26 @@ def save_leaderboard(data):
     save_json_atomic(LEADERBOARD_FILE, data)
 
 
+def leaderboard_press_total():
+    leaderboard = load_leaderboard()
+    total = 0
+    for player in leaderboard.values():
+        try:
+            total += int(player.get("presses", 0))
+        except (TypeError, ValueError):
+            continue
+    return total
+
+
+def repair_total_presses(stats):
+    leaderboard_total = leaderboard_press_total()
+    stored_total = int(stats.get("total_presses", 0) or 0)
+    if leaderboard_total > stored_total:
+        stats["total_presses"] = leaderboard_total
+        save_stats(stats)
+    return stats
+
+
 def load_world_firsts():
     if not os.path.exists(WORLD_FIRSTS_FILE):
         return {}
@@ -336,7 +356,7 @@ def press():
     new_world_firsts = []
     new_global_milestones = []
     with storage_lock:
-        stats = load_stats()
+        stats = repair_total_presses(load_stats())
         previous_total_presses = int(stats.get("total_presses", 0))
         stats["total_presses"] = stats.get("total_presses", 0) + delta
         save_stats(stats)
@@ -454,13 +474,15 @@ def daily_press():
 
 @app.get("/api/stats")
 def stats():
-    return jsonify(load_stats())
+    with storage_lock:
+        current_stats = repair_total_presses(load_stats())
+    return jsonify(current_stats)
 
 
 @app.get("/api/global-milestones")
 def global_milestones():
     with storage_lock:
-        current_stats = load_stats()
+        current_stats = repair_total_presses(load_stats())
         total_presses = int(current_stats.get("total_presses", 0))
         milestones = serialize_global_milestones(total_presses)
 
