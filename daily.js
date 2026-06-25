@@ -1,5 +1,6 @@
 (function(){
   const STORAGE_KEY = 'thebutton:v1';
+  let lastGoal = null;
 
   function qs(selector){ return document.querySelector(selector); }
   function todayKey(){
@@ -42,10 +43,14 @@
     setText('daily-total-presses', Number(state.presses || 0).toLocaleString());
   }
   async function renderGoal(){
-    let goal = {date:todayKey(), presses:0, target:1000};
+    let goal = lastGoal || {date:todayKey(), presses:0, target:1000};
     try{
       const response = await window.buttonApiFetch('/api/daily-goal');
-      if(response.ok) goal = await response.json();
+      if(response.ok){
+        goal = await response.json();
+        lastGoal = goal;
+        try{ localStorage.setItem('thebutton:daily-goal', JSON.stringify(goal)); }catch(error){}
+      }
     }catch(error){
       try{
         const saved = JSON.parse(localStorage.getItem('thebutton:daily-goal') || '{}');

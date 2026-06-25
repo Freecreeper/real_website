@@ -468,7 +468,7 @@ if(visitorGreeting){
 
   function prankGoose(){
     // create goose img (simple animated div)
-    const g = document.createElement('div'); g.style.position='fixed'; g.style.zIndex=1000; g.style.width='160px'; g.style.height='100px'; g.style.right='-200px'; g.style.bottom='120px'; g.style.background='url(C:\\sourse\\real_website\\Goose_on_white_background_03.png) center/contain no-repeat'; g.style.transition='right 900ms ease, transform 900ms'; document.body.appendChild(g);
+    const g = document.createElement('div'); g.style.position='fixed'; g.style.zIndex=1000; g.style.width='160px'; g.style.height='100px'; g.style.right='-200px'; g.style.bottom='120px'; g.style.background="url('images/goose.png') center/contain no-repeat"; g.style.transition='right 900ms ease, transform 900ms'; document.body.appendChild(g);
     // steal button
     btn.disabled=true; btn.style.filter='grayscale(60%)';
     setTimeout(()=>{g.style.right='20px'; g.style.transform='rotate(-5deg)';},120);
@@ -827,7 +827,7 @@ if(countEl){
   const API_BASE = '';// relative path assumes same host (serve Flask alongside static files)
   function apiBases(){
     const bases = [API_BASE];
-    if(location.hostname && location.port !== '5000'){
+    if(location.hostname && location.port !== '5000' && location.protocol === 'http:'){
       bases.push(`${location.protocol}//${location.hostname}:5000`);
     }
     return [...new Set(bases)];
@@ -838,10 +838,18 @@ if(countEl){
     for(const base of apiBases()){
       try{
         const res = await fetch(base + path, Object.assign({cache:'no-store'}, options || {}));
-        if(res.ok || ![404, 502, 503, 504].includes(res.status)){
+        const contentType = res.headers.get('content-type') || '';
+        if(res.ok && (!path.startsWith('/api/') || contentType.includes('application/json'))){
           return res;
         }
-        lastError = new Error(`${path} returned 404`);
+        if(res.ok){
+          lastError = new Error(`${path} returned non-JSON response`);
+          continue;
+        }
+        if(![404, 502, 503, 504].includes(res.status)){
+          return res;
+        }
+        lastError = new Error(`${path} returned ${res.status}`);
       }catch(error){
         lastError = error;
       }

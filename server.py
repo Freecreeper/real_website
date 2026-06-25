@@ -54,6 +54,9 @@ PUBLIC_FILES = {
 def add_cache_headers(response):
     if request.path.startswith("/api/"):
         response.headers["Cache-Control"] = "no-store, max-age=0"
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     return response
 
 
@@ -92,9 +95,15 @@ def load_stats():
     }
 
 
-def save_stats(data):
-    with open(STATS_FILE, "w", encoding="utf-8") as f:
+def save_json_atomic(path, data):
+    tmp_path = f"{path}.tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+    os.replace(tmp_path, path)
+
+
+def save_stats(data):
+    save_json_atomic(STATS_FILE, data)
 
 
 # -----------------------
@@ -113,8 +122,7 @@ def load_leaderboard():
 
 
 def save_leaderboard(data):
-    with open(LEADERBOARD_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    save_json_atomic(LEADERBOARD_FILE, data)
 
 
 def load_world_firsts():
@@ -129,8 +137,7 @@ def load_world_firsts():
 
 
 def save_world_firsts(data):
-    with open(WORLD_FIRSTS_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    save_json_atomic(WORLD_FIRSTS_FILE, data)
 
 
 def today_key():
@@ -159,8 +166,7 @@ def load_daily_goal():
 
 
 def save_daily_goal(data):
-    with open(DAILY_GOAL_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
+    save_json_atomic(DAILY_GOAL_FILE, data)
 
 
 def achievement_count(presses, exclusive_achievements):

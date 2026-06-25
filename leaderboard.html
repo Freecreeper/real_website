@@ -39,7 +39,7 @@
             <th>Achievements</th>
           </tr>
         </thead>
-        <tbody id="leaderboard-body"></tbody>
+        <tbody id="leaderboard-body"><tr><td colspan="4">Loading leaderboard...</td></tr></tbody>
       </table>
     </section>
   </main>
@@ -52,24 +52,67 @@
   <script src="api-client.js"></script>
   <script src="page-effects.js"></script>
   <script>
-  async function loadLeaderboard() {
-    try {
-      const res = await window.buttonApiFetch('/api/leaderboard');
-      const players = await res.json();
-      const body = document.getElementById('leaderboard-body');
-      body.innerHTML = '';
+  let hasRenderedLeaderboard = false;
 
-      players.forEach((player,index)=>{
-        const row = body.insertRow();
-        [index + 1, player.name, Number(player.presses || 0).toLocaleString(), player.achievements || 0]
-          .forEach(value => {
-            const cell = row.insertCell();
-            cell.textContent = value;
-          });
-      });
+  function leaderboardApiUrls(){
+    const urls = ['/api/leaderboard'];
+    if(location.hostname && location.port !== '5000' && location.protocol === 'http:'){
+      urls.push(`${location.protocol}//${location.hostname}:5000/api/leaderboard`);
+    }
+    return [...new Set(urls)];
+  }
+
+  async function fetchLeaderboard(){
+    let lastError = null;
+    for(const url of leaderboardApiUrls()){
+      try{
+        const res = await fetch(url, {cache:'no-store'});
+        const contentType = res.headers.get('content-type') || '';
+        if(!res.ok){
+          lastError = new Error(`Leaderboard returned ${res.status}`);
+          continue;
+        }
+        if(!contentType.includes('application/json')){
+          lastError = new Error('Leaderboard returned a non-JSON response');
+          continue;
+        }
+        return res.json();
+      }catch(error){
+        lastError = error;
+      }
+    }
+    throw lastError || new Error('Leaderboard unavailable');
+  }
+
+  function renderLeaderboard(players){
+    const body = document.getElementById('leaderboard-body');
+    if(!body) return;
+    body.innerHTML = '';
+    hasRenderedLeaderboard = true;
+
+    if(!Array.isArray(players) || players.length === 0){
+      body.innerHTML = '<tr><td colspan="4">No leaderboard entries yet.</td></tr>';
+      return;
+    }
+
+    players.forEach((player,index)=>{
+      const row = body.insertRow();
+      [index + 1, player.name, Number(player.presses || 0).toLocaleString(), player.achievements || 0]
+        .forEach(value => {
+          const cell = row.insertCell();
+          cell.textContent = value;
+        });
+    });
+  }
+
+  async function loadLeaderboard() {
+    const body = document.getElementById('leaderboard-body');
+    try {
+      renderLeaderboard(await fetchLeaderboard());
     } catch(err) {
-      const body = document.getElementById('leaderboard-body');
-      if(body) body.innerHTML = '<tr><td colspan="4">Leaderboard is unavailable.</td></tr>';
+      if(body && !hasRenderedLeaderboard){
+        body.innerHTML = '<tr><td colspan="4">Leaderboard is unavailable.</td></tr>';
+      }
     }
   }
 
