@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Button - Skins</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="collection-page">
+  <canvas id="particles"></canvas>
+
+  <header class="topbar">
+    <a href="index.html" class="brand">The Button</a>
+    <nav class="page-nav" aria-label="Main navigation">
+      <a href="index.html">Button</a>
+      <a href="menu.html">Menu</a>
+      <a href="skins.html" class="active" aria-current="page">Skins</a>
+      <span id="version-display"></span>
+    </nav>
+  </header>
+
+  <main class="profile-main">
+    <section class="profile-grid">
+      <div class="glass profile-card skin-preview-card">
+        <h1>Button Skins</h1>
+        <p id="skin-summary" class="muted">Choose a skin to preview.</p>
+        <div class="skin-preview-wrap">
+          <button id="skin-preview-button" class="giant skin-classic" type="button">THE BUTTON</button>
+        </div>
+        <div class="controls skin-controls">
+          <button id="equip-selected-skin" class="pill primary" type="button">Equip</button>
+        </div>
+      </div>
+
+      <div class="glass profile-card">
+        <h2>Inventory</h2>
+        <div id="skin-grid" class="skin-grid"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span class="creator-credit">Made by Zane</span>
+  </footer>
+
+  <script src="version-egg.js"></script>
+  <script src="skins.js"></script>
+  <script src="page-effects.js"></script>
+</body>
+</html>

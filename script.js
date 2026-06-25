@@ -258,8 +258,8 @@ document.addEventListener('touchend', e => {
     ensureDaily();
     unlockSkins(false);
     applyButtonSkin();
-    renderSkinPreview();
-    renderDailyGoal();
+    if(skinNameEl || equipSkinButton) renderSkinPreview();
+    if(dailyGoalLabel || dailyGoalBar || dailyGoalCopy) renderDailyGoal();
     if(countEl){
       countEl.textContent = state.presses;
     }
@@ -648,6 +648,7 @@ function alienContact() {
   });
 
   const openStats = qs('#open-stats');
+  const openMenu = qs('#open-menu');
   const openAchievements = qs('#open-achievements');
   const openLore = qs('#open-lore');
   const openLeaderboard = qs('#open-leaderboard');
@@ -657,6 +658,7 @@ function alienContact() {
   const achievementsPanel = qs('#achievements-panel');
   const lorePanel = qs('#lore-panel');
 
+  if(openMenu) openMenu.addEventListener('click', ()=>{ window.location.href = 'menu.html'; });
   if(openStats) openStats.addEventListener('click', ()=>{ window.location.href = 'stats.html'; });
   if(openAchievements) openAchievements.addEventListener('click', ()=>{ window.location.href = 'achievements.html'; });
   if(openLore) openLore.addEventListener('click', ()=>{ window.location.href = 'lore.html'; });
@@ -793,15 +795,9 @@ if(countEl){
   // start time tracking and render initial time
   renderTime(); startTime();
 
-  // fetch and display version
-  fetch('version.json?T=' + Date.now()).then(r=>r.json()).then(v=>{
-    const el = qs('#version-display'); if(!el) return;
-    const buildNumber = String(v.build || 'unknown').split('-').pop();
-    el.textContent = `v${v.version || '0.0.0'} b${buildNumber}`;
-    el.addEventListener('click', ()=>{ toast(`Version ${v.version} — build ${v.build}`); });
-  }).catch(err=>{
-  console.error("Version fetch failed:", err);
-  });
+  if(window.setupVersionEgg){
+    window.setupVersionEgg({toast});
+  }
 
   // --- Global stats (Flask API) integration ---
   const API_BASE = '';// relative path assumes same host (serve Flask alongside static files)

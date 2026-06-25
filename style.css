@@ -192,14 +192,35 @@ body.panel-open .panel{display:flex;animation:slideIn 260ms ease;}
 .stat-tile strong{display:block;margin-top:5px;color:#fff;font-size:22px}
 .skin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
 .skin-card{padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:rgba(255,255,255,.025)}
+.skin-card{color:inherit;text-align:left;font:inherit;cursor:pointer}
 .skin-card.locked{opacity:.46}
+.skin-card.selected{border-color:rgba(124,242,255,.55);background:rgba(124,242,255,.08)}
 .skin-swatch{width:100%;height:44px;border-radius:999px;margin-bottom:10px}
+.skin-swatch.giant{--size:auto;box-shadow:none;cursor:default;font-size:0}
 .skin-card strong{display:block}
 .skin-card span{display:block;margin-top:3px;color:rgba(255,255,255,.52);font-size:12px}
+.skin-preview-wrap{display:flex;justify-content:center;padding:30px 0 20px}
+.skin-preview-card{display:flex;flex-direction:column}
+.menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.menu-tile{min-height:118px;padding:18px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:rgba(255,255,255,.025);color:inherit;text-decoration:none;display:flex;flex-direction:column;justify-content:space-between;transition:background 150ms,border-color 150ms,transform 150ms}
+.menu-tile:hover{background:rgba(124,242,255,.08);border-color:rgba(124,242,255,.35);transform:translateY(-1px)}
+.menu-tile span{color:var(--accent);font-size:12px;font-weight:800;text-transform:uppercase}
+.menu-tile strong{font-size:18px;line-height:1.25;color:#fff}
+.easter-main{position:relative;z-index:1;min-height:100vh;width:min(780px,calc(100% - 32px));margin:0 auto;display:flex;align-items:center;justify-content:center;padding:104px 0 80px}
+.easter-card{text-align:center}
+.easter-card h1{margin:6px 0 14px;font-size:48px;letter-spacing:0}
+.easter-card p{font-size:17px;line-height:1.65}
+.easter-card .pill{display:inline-flex;margin-top:10px}
+.leaderboard-card{overflow:auto}
+.leaderboard-table{width:100%;border-collapse:collapse}
+.leaderboard-table th,.leaderboard-table td{padding:13px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
+.leaderboard-table th{color:rgba(255,255,255,.5);font-size:11px;text-transform:uppercase}
+.leaderboard-table td{color:#fff}
 
 @media (max-width:760px){
   .profile-main{padding-top:132px}
   .profile-grid{grid-template-columns:1fr}
   .profile-name{align-items:start;flex-direction:column}
-  .stat-grid,.skin-grid{grid-template-columns:1fr}
+  .stat-grid,.skin-grid,.menu-grid{grid-template-columns:1fr}
+  .easter-card h1{font-size:38px}
 }

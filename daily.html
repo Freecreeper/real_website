@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Button - Daily</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="collection-page">
+  <canvas id="particles"></canvas>
+
+  <header class="topbar">
+    <a href="index.html" class="brand">The Button</a>
+    <nav class="page-nav" aria-label="Main navigation">
+      <a href="index.html">Button</a>
+      <a href="menu.html">Menu</a>
+      <a href="daily.html" class="active" aria-current="page">Daily</a>
+      <span id="version-display"></span>
+    </nav>
+  </header>
+
+  <main class="profile-main">
+    <section class="profile-grid">
+      <div class="glass profile-card">
+        <h1>Daily Check-In</h1>
+        <p class="muted">Come back each day and press the button at least once.</p>
+        <div class="stat-grid">
+          <div class="stat-tile"><span>Current streak</span><strong id="daily-streak">0d</strong></div>
+          <div class="stat-tile"><span>Best streak</span><strong id="daily-best-streak">0d</strong></div>
+          <div class="stat-tile"><span>Presses today</span><strong id="daily-presses">0</strong></div>
+          <div class="stat-tile"><span>Total presses</span><strong id="daily-total-presses">0</strong></div>
+        </div>
+      </div>
+
+      <div class="glass profile-card">
+        <h2>Community Goal</h2>
+        <p id="daily-goal-copy" class="muted">Loading today's goal...</p>
+        <div class="goal-track">
+          <span id="daily-goal-bar"></span>
+        </div>
+        <div class="stat-grid" style="margin-top:14px">
+          <div class="stat-tile"><span>Community today</span><strong id="daily-goal-label">0 / 1,000</strong></div>
+          <div class="stat-tile"><span>Status</span><strong id="daily-goal-status">0%</strong></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span class="creator-credit">Made by Zane</span>
+  </footer>
+
+  <script src="version-egg.js"></script>
+  <script src="daily.js"></script>
+  <script src="page-effects.js"></script>
+</body>
+</html>

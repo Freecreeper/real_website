@@ -1,73 +1,80 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>The Button Leaderboard</title>
-
-<link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Button - Leaderboard</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 
-<body>
+<body class="collection-page">
+  <canvas id="particles"></canvas>
 
-<header class="topbar">
-  <div class="brand">🏆 Leaderboard</div>
+  <header class="topbar">
+    <a href="index.html" class="brand">The Button</a>
+    <nav class="page-nav" aria-label="Main navigation">
+      <a href="index.html">Button</a>
+      <a href="menu.html">Menu</a>
+      <a href="leaderboard.html" class="active" aria-current="page">Leaderboard</a>
+      <span id="version-display"></span>
+    </nav>
+  </header>
 
-  <a href="index.html" class="pill">
-    Back
-  </a>
-</header>
+  <main class="collection-main">
+    <header class="collection-heading">
+      <div>
+        <p class="eyebrow">Top players</p>
+        <h1>Leaderboard</h1>
+        <p class="muted">Server-ranked button pressers.</p>
+      </div>
+    </header>
 
-<main style="max-width:900px;margin:auto;padding:40px;">
+    <section class="glass leaderboard-card">
+      <table class="leaderboard-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Presses</th>
+            <th>Achievements</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body"></tbody>
+      </table>
+    </section>
+  </main>
 
-  <section class="glass" style="padding:20px;">
-    <h2>Top Button Pressers</h2>
+  <footer class="footer">
+    <span class="creator-credit">Made by Zane</span>
+  </footer>
 
-    <table style="width:100%;margin-top:20px;">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Name</th>
-          <th>Presses</th>
-          <th>Achievements</th>
-        </tr>
-      </thead>
+  <script src="version-egg.js"></script>
+  <script src="page-effects.js"></script>
+  <script>
+  async function loadLeaderboard() {
+    try {
+      const res = await fetch('/api/leaderboard');
+      const players = await res.json();
+      const body = document.getElementById('leaderboard-body');
+      body.innerHTML = '';
 
-      <tbody id="leaderboard-body">
-      </tbody>
-    </table>
-
-  </section>
-
-</main>
-
-<script>
-async function loadLeaderboard() {
-  try {
-
-    const res = await fetch('/api/leaderboard');
-    const players = await res.json();
-
-    const body = document.getElementById('leaderboard-body');
-    body.innerHTML = '';
-
-    players.forEach((player,index)=>{
-      const row = body.insertRow();
-      [index + 1, player.name, player.presses, player.achievements]
-        .forEach(value => {
-          const cell = row.insertCell();
-          cell.textContent = value;
-        });
-    });
-
-  } catch(err) {
-    console.error(err);
+      players.forEach((player,index)=>{
+        const row = body.insertRow();
+        [index + 1, player.name, Number(player.presses || 0).toLocaleString(), player.achievements || 0]
+          .forEach(value => {
+            const cell = row.insertCell();
+            cell.textContent = value;
+          });
+      });
+    } catch(err) {
+      const body = document.getElementById('leaderboard-body');
+      if(body) body.innerHTML = '<tr><td colspan="4">Leaderboard is unavailable.</td></tr>';
+    }
   }
-}
 
-loadLeaderboard();
-setInterval(loadLeaderboard,5000);
-</script>
-
+  if(window.setupVersionEgg) window.setupVersionEgg();
+  loadLeaderboard();
+  setInterval(loadLeaderboard,5000);
+  </script>
 </body>
 </html>

@@ -27,6 +27,10 @@ EVENT_KEYS = {
 }
 PUBLIC_FILES = {
     "index.html",
+    "menu.html",
+    "daily.html",
+    "skins.html",
+    "easter-egg.html",
     "achievements.html",
     "achievements.js",
     "lore.html",
@@ -34,6 +38,10 @@ PUBLIC_FILES = {
     "leaderboard.html",
     "stats.html",
     "script.js",
+    "daily.js",
+    "skins.js",
+    "version-egg.js",
+    "page-effects.js",
     "style.css",
     "version.json",
 }
