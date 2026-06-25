@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory, abort
 from flask_socketio import SocketIO, emit
 import json
 import os
+import random
 from threading import Lock
 from datetime import datetime, timezone, timedelta
 
@@ -18,6 +19,7 @@ storage_lock = Lock()
 STANDARD_ACHIEVEMENT_MILESTONES = (10, 25, 50, 100, 500, 1000)
 WORLD_FIRST_INTERVAL = 5000
 DAILY_GOAL_TARGET = 1000
+MOON_SKIN_DROP_CHANCE = 0.05
 GLOBAL_MILESTONE_DEFS = [
     {
         "id": "first-era",
@@ -328,6 +330,43 @@ def serialize_global_milestones(total_presses):
     return serialized
 
 
+def active_global_milestone(milestone_id):
+    unlocks = load_global_milestone_unlocks()
+    unlock = unlocks.get(milestone_id)
+    if not unlock:
+        return False
+
+    milestone = next((item for item in GLOBAL_MILESTONE_DEFS if item["id"] == milestone_id), None)
+    if not milestone or not milestone["active_hours"]:
+        return False
+
+    unlocked_at = datetime.fromisoformat(unlock["unlocked_at"])
+    active_until = unlocked_at + timedelta(hours=milestone["active_hours"])
+    return datetime.now(timezone.utc) < active_until
+
+
+def apply_first_era_rewards(player):
+    rewards = {
+        "event_achievements": [],
+        "skins": []
+    }
+    player.setdefault("event_achievements", [])
+    player.setdefault("skins", [])
+
+    if not active_global_milestone("first-era"):
+        return rewards
+
+    if "first-era" not in player["event_achievements"]:
+        player["event_achievements"].append("first-era")
+        rewards["event_achievements"].append("first-era")
+
+    if "moon" not in player["skins"] and random.random() < MOON_SKIN_DROP_CHANCE:
+        player["skins"].append("moon")
+        rewards["skins"].append("moon")
+
+    return rewards
+
+
 def achievement_count(presses, exclusive_achievements):
     standard_count = sum(presses >= milestone for milestone in STANDARD_ACHIEVEMENT_MILESTONES)
     return standard_count + len(exclusive_achievements)
@@ -355,6 +394,7 @@ def press():
 
     new_world_firsts = []
     new_global_milestones = []
+    event_rewards = {"event_achievements": [], "skins": []}
     with storage_lock:
         stats = repair_total_presses(load_stats())
         previous_total_presses = int(stats.get("total_presses", 0))
@@ -366,11 +406,15 @@ def press():
             leaderboard[name] = {
                 "presses": 0,
                 "achievements": 0,
-                "exclusive_achievements": []
+                "exclusive_achievements": [],
+                "event_achievements": [],
+                "skins": []
             }
 
         player = leaderboard[name]
         player.setdefault("exclusive_achievements", [])
+        player.setdefault("event_achievements", [])
+        player.setdefault("skins", [])
         previous_presses = int(player.get("presses", 0))
         player["presses"] = previous_presses + delta
 
@@ -404,6 +448,12 @@ def press():
             previous_total_presses,
             stats["total_presses"]
         )
+        event_rewards = apply_first_era_rewards(player)
+        player["achievements"] = achievement_count(
+            player["presses"],
+            player["exclusive_achievements"]
+        ) + len(player["event_achievements"])
+        save_leaderboard(leaderboard)
 
     broadcast()
 
@@ -412,7 +462,8 @@ def press():
         player_presses=player["presses"],
         new_world_firsts=new_world_firsts,
         daily_goal=daily_goal,
-        new_global_milestones=new_global_milestones
+        new_global_milestones=new_global_milestones,
+        event_rewards=event_rewards
     )
 
 
@@ -545,6 +596,8 @@ def achievements():
         name=name,
         presses=int(player.get("presses", 0)),
         exclusive_achievements=player.get("exclusive_achievements", []),
+        event_achievements=player.get("event_achievements", []),
+        skins=player.get("skins", []),
         world_firsts=ordered_claims,
         next_world_first_milestone=next_milestone
     )

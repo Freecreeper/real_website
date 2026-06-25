@@ -8,6 +8,13 @@
     {id:'a500', presses:500, title:'Concerning Dedication'},
     {id:'a1000', presses:1000, title:'Please Go Outside'}
   ];
+  const eventAchievements = [
+    {
+      id:'first-era',
+      title:'First Era Badge',
+      description:'Press during The Night Falls global event.'
+    }
+  ];
 
   function getLocalState(){
     try{
@@ -94,6 +101,32 @@
       : 'Server offline - world-first claims are unavailable.';
   }
 
+  function renderEventAchievements(state){
+    const container = document.getElementById('event-achievements');
+    if(!container) return;
+    const unlockedIds = new Set(state.eventAchievements || []);
+    container.replaceChildren(...eventAchievements.map(achievement => createAchievementRow(
+      achievement.title,
+      unlockedIds.has(achievement.id) ? 'Unlocked during a global event.' : achievement.description,
+      unlockedIds.has(achievement.id),
+      true
+    )));
+  }
+
+  function mergeServerRewards(state, data){
+    state.eventAchievements = Array.isArray(state.eventAchievements) ? state.eventAchievements : [];
+    state.skins = Object.assign({owned:['classic'], equipped:'classic'}, state.skins || {});
+    state.skins.owned = Array.isArray(state.skins.owned) ? state.skins.owned : ['classic'];
+
+    for(const achievement of data.event_achievements || []){
+      if(!state.eventAchievements.includes(achievement)) state.eventAchievements.push(achievement);
+    }
+    for(const skin of data.skins || []){
+      if(!state.skins.owned.includes(skin)) state.skins.owned.push(skin);
+    }
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(error){}
+  }
+
   async function loadServerAchievements(gamerTag){
     const response = await window.buttonApiFetch(`/api/achievements?name=${encodeURIComponent(gamerTag)}`);
     if(!response.ok) throw new Error('Achievements API unavailable');
@@ -135,11 +168,16 @@
   const state = getLocalState();
   const gamerTag = state.gamerTag || 'Traveler';
   renderStandard(state);
+  renderEventAchievements(state);
   document.getElementById('achievement-summary').textContent =
     `${gamerTag}, you have ${Number(state.presses || 0).toLocaleString()} local presses.`;
 
   loadServerAchievements(gamerTag)
-    .then(data => renderWorldFirsts(data, gamerTag))
+    .then(data => {
+      mergeServerRewards(state, data);
+      renderEventAchievements(state);
+      renderWorldFirsts(data, gamerTag);
+    })
     .catch(() => {
       renderWorldFirsts({world_firsts:[], next_world_first_milestone:5000}, gamerTag, false);
     });

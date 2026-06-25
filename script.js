@@ -38,6 +38,7 @@
   let state = {
     presses:0,
     achievements:[],
+    eventAchievements:[],
     loreSeen:[],
     gamerTag:'Traveler',
     humor:false,
@@ -105,6 +106,7 @@
 
   const skinDefs = [
     {id:'classic', name:'Classic', unlock:'Starter skin', requirement:()=>true},
+    {id:'moon', name:'Moon', unlock:'Drops during The Night Falls', requirement:()=>state.skins.owned.includes('moon')},
     {id:'sunrise', name:'Sunrise', unlock:'Press 25 times', requirement:()=>state.presses >= 25},
     {id:'matrix', name:'Matrix', unlock:'Press 100 times', requirement:()=>state.presses >= 100},
     {id:'royal', name:'Royal', unlock:'Reach a 3 day streak', requirement:()=>getDaily().streak >= 3},
@@ -125,6 +127,7 @@
   }
   function migrateState(){
     state.achievements = Array.isArray(state.achievements) ? state.achievements : [];
+    state.eventAchievements = Array.isArray(state.eventAchievements) ? state.eventAchievements : [];
     state.loreSeen = Array.isArray(state.loreSeen) ? state.loreSeen : [];
     state.lastClicks = Array.isArray(state.lastClicks) ? state.lastClicks : [];
     state.daily = Object.assign({
@@ -193,6 +196,30 @@
       if(skin.requirement() && !state.skins.owned.includes(skin.id)){
         state.skins.owned.push(skin.id);
         if(showToasts) toast(`Button skin unlocked: ${skin.name}`);
+      }
+    }
+  }
+
+  function applyEventRewards(rewards){
+    if(!rewards) return;
+    state.eventAchievements = Array.isArray(state.eventAchievements) ? state.eventAchievements : [];
+    state.skins = state.skins || {owned:['classic'], equipped:'classic'};
+    state.skins.owned = Array.isArray(state.skins.owned) ? state.skins.owned : ['classic'];
+
+    for(const achievement of rewards.event_achievements || []){
+      if(!state.eventAchievements.includes(achievement)){
+        state.eventAchievements.push(achievement);
+        if(achievement === 'first-era'){
+          toast('Event badge unlocked: First Era', {time:6000});
+          showAchievementPopup('First Era Badge');
+        }
+      }
+    }
+
+    for(const skin of rewards.skins || []){
+      if(!state.skins.owned.includes(skin)){
+        state.skins.owned.push(skin);
+        toast(skin === 'moon' ? 'Rare skin dropped: Moon Button' : `Skin dropped: ${skin}`, {time:7000});
       }
     }
   }
@@ -419,6 +446,8 @@ if(visitorGreeting){
         toast(`Global milestone unlocked: ${milestone.title}`, {time:7000});
         showAchievementPopup(`${Number(milestone.threshold).toLocaleString()} - ${milestone.title}`);
       }
+      applyEventRewards(data.event_rewards);
+      save();
     }).catch(()=>{
       const k='thebutton:global';
       try{
@@ -747,6 +776,7 @@ function alienContact() {
       state = {
         presses:0,
         achievements:[],
+        eventAchievements:[],
         loreSeen:[],
         gamerTag,
         humor,

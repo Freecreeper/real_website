@@ -80,6 +80,7 @@
     const base = {
       presses:0,
       achievements:[],
+      eventAchievements:[],
       loreSeen:[],
       gamerTag:'Traveler',
       pranks:0,
@@ -115,7 +116,7 @@
     setText('p_today', Number(state.daily.presses || 0).toLocaleString());
     setText('p_streak', `${state.daily.streak || 0}d`);
     setText('p_best_streak', `${state.daily.bestStreak || 0}d`);
-    setText('p_achievements', (state.achievements || []).length);
+    setText('p_achievements', (state.achievements || []).length + (state.eventAchievements || []).length);
     setText('p_lore', (state.loreSeen || []).length);
     setText('p_pranks', state.pranks || 0);
     setText('p_time', formatTime(state.timeSpentSeconds || 0));

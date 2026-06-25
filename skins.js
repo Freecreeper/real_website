@@ -2,6 +2,7 @@
   const STORAGE_KEY = 'thebutton:v1';
   const skinDefs = [
     {id:'classic', name:'Classic', unlock:'Starter skin', requirement:state => true},
+    {id:'moon', name:'Moon', unlock:'Drops during The Night Falls event', requirement:state => (state.skins?.owned || []).includes('moon')},
     {id:'sunrise', name:'Sunrise', unlock:'Press 25 times', requirement:state => Number(state.presses || 0) >= 25},
     {id:'matrix', name:'Matrix', unlock:'Press 100 times', requirement:state => Number(state.presses || 0) >= 100},
     {id:'royal', name:'Royal', unlock:'Reach a 3 day streak', requirement:state => Number((state.daily || {}).streak || 0) >= 3},
@@ -80,11 +81,27 @@
   function save(){
     try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(error){}
   }
+  async function syncServerSkins(){
+    if(!window.buttonApiFetch) return;
+    const gamerTag = state.gamerTag || 'Traveler';
+    try{
+      const response = await window.buttonApiFetch(`/api/achievements?name=${encodeURIComponent(gamerTag)}`);
+      if(!response.ok) return;
+      const data = await response.json();
+      for(const skin of data.skins || []){
+        if(!state.skins.owned.includes(skin)) state.skins.owned.push(skin);
+      }
+      save();
+      renderGrid();
+      applyPreview();
+    }catch(error){}
+  }
 
   state = loadState();
   selectedSkin = state.skins.equipped || 'classic';
   renderGrid();
   applyPreview();
+  syncServerSkins();
 
   const equip = qs('#equip-selected-skin');
   if(equip){
