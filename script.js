@@ -59,6 +59,8 @@
   };
   let skinPreviewIndex = 0;
   let dailyGoal = {date:'', presses:0, target:1000};
+  let nightFallsActive = false;
+  let nightFallsAudio = null;
   
   // --- Data ---
   const messages = [
@@ -244,6 +246,72 @@
       btn.classList.remove('skin-' + skin.id);
     }
     btn.classList.add('skin-' + (state.skins.equipped || 'classic'));
+  }
+
+  function ensureNightFallsSky(){
+    let sky = qs('#nightfall-sky');
+    if(sky) return sky;
+    sky = document.createElement('div');
+    sky.id = 'nightfall-sky';
+    sky.setAttribute('aria-hidden', 'true');
+    for(let i=0;i<72;i++){
+      const star = document.createElement('span');
+      star.style.left = rand(2,98) + '%';
+      star.style.top = rand(4,96) + '%';
+      star.style.animationDelay = (Math.random() * 4).toFixed(2) + 's';
+      star.style.opacity = (Math.random() * 0.65 + 0.25).toFixed(2);
+      sky.appendChild(star);
+    }
+    document.body.appendChild(sky);
+    return sky;
+  }
+
+  function startNightFallsMusic(){
+    if(!nightFallsActive || nightFallsAudio) return;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if(!AudioContext) return;
+    const ctx = new AudioContext();
+    const gain = ctx.createGain();
+    gain.gain.value = 0.025;
+    gain.connect(ctx.destination);
+
+    const low = ctx.createOscillator();
+    low.type = 'sine';
+    low.frequency.value = 110;
+    low.connect(gain);
+
+    const high = ctx.createOscillator();
+    high.type = 'triangle';
+    high.frequency.value = 220;
+    const highGain = ctx.createGain();
+    highGain.gain.value = 0.012;
+    high.connect(highGain);
+    highGain.connect(ctx.destination);
+
+    low.start();
+    high.start();
+    nightFallsAudio = {ctx, gain, low, high};
+  }
+
+  function applyNightFallsEvent(active, animate=false){
+    nightFallsActive = Boolean(active);
+    document.body.classList.toggle('nightfall-active', nightFallsActive);
+    if(!nightFallsActive) return;
+
+    ensureNightFallsSky();
+    const subtext = qs('#subtext');
+    if(subtext) subtext.textContent = 'The First Era has ended...';
+    if(msgBox) msgBox.textContent = 'Night Falls is active. Press now for the First Era badge and a chance at the Moon Button skin.';
+
+    if(animate && !sessionStorage.getItem('thebutton:nightfall-intro-seen')){
+      sessionStorage.setItem('thebutton:nightfall-intro-seen', '1');
+      document.body.classList.add('nightfall-intro');
+      setTimeout(()=>document.body.classList.remove('nightfall-intro'), 2600);
+    }
+  }
+
+  function milestoneIsActive(milestone){
+    return milestone && milestone.status === 'active';
   }
 
   function renderSkinPreview(){
@@ -445,6 +513,9 @@ if(visitorGreeting){
       for(const milestone of data.new_global_milestones || []){
         toast(`Global milestone unlocked: ${milestone.title}`, {time:7000});
         showAchievementPopup(`${Number(milestone.threshold).toLocaleString()} - ${milestone.title}`);
+        if(milestone.id === 'first-era'){
+          applyNightFallsEvent(true, true);
+        }
       }
       applyEventRewards(data.event_rewards);
       save();
@@ -687,6 +758,7 @@ function alienContact() {
       event.preventDefault();
     }
     recordClickTime();
+    startNightFallsMusic();
     state.presses++;
     recordDailyPress();
     updateGlobalPresses(1);
@@ -993,6 +1065,16 @@ if(countEl){
     }catch(e){ /* ignore */ }
   }
 
+  async function fetchGlobalMilestones(){
+    try{
+      const res = await apiFetch('/api/global-milestones');
+      if(!res.ok) throw new Error('milestone API unavailable');
+      const data = await res.json();
+      const firstEra = (data.milestones || []).find(milestone => milestone.id === 'first-era');
+      applyNightFallsEvent(milestoneIsActive(firstEra), false);
+    }catch(e){ /* keep the normal button page if the API is unavailable */ }
+  }
+
   function animateNumber(el, to){
     const from = Number(el.textContent.replace(/[^0-9]/g,'')) || 0;
     if(from === to) return; const start = performance.now(); const dur = 600; function step(now){ const t = Math.min(1, (now-start)/dur); const v = Math.round(from + (to-from)*t); el.textContent = v; el.classList.add('num-animate'); if(t<1) requestAnimationFrame(step); else { setTimeout(()=>el.classList.remove('num-animate'), 420); } } requestAnimationFrame(step);
@@ -1000,6 +1082,7 @@ if(countEl){
 
   // start periodic refresh
   fetchGlobalStats(); globalRefreshTimer = setInterval(fetchGlobalStats, 30000);
+  fetchGlobalMilestones(); setInterval(fetchGlobalMilestones, 60000);
   fetchDailyGoal(); setInterval(fetchDailyGoal, 30000);
 
   // manual refresh/close handlers

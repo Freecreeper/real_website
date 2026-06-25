@@ -25,6 +25,27 @@ body{
   overflow:hidden;
   overscroll-behavior:none;
 }
+body.nightfall-active{
+  background:
+    radial-gradient(900px 520px at 50% 18%, rgba(124,242,255,.08), transparent 62%),
+    radial-gradient(700px 380px at 78% 72%, rgba(155,124,255,.08), transparent 64%),
+    linear-gradient(180deg,#01030a,#050817 54%,#02040a);
+}
+body.nightfall-intro::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:9998;
+  pointer-events:none;
+  background:#000;
+  animation:nightfallFade 2600ms ease forwards;
+}
+@keyframes nightfallFade{
+  0%{opacity:0}
+  18%{opacity:1}
+  58%{opacity:1}
+  100%{opacity:0}
+}
 .topbar{position:fixed;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;align-items:center;z-index:40}
 .brand{font-weight:700;font-size:18px;color:var(--accent-2);text-shadow:0 6px 24px rgba(155,124,255,0.06)}
 .stats-mini{display:flex;gap:10px;align-items:center}
@@ -98,6 +119,18 @@ body.panel-open .panel{display:flex;animation:slideIn 260ms ease;}
 
 /* Particles canvas full screen behind UI */
 #particles{position:fixed;inset:0;z-index:0}
+#nightfall-sky{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden}
+#nightfall-sky span{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;box-shadow:0 0 10px rgba(124,242,255,.9);animation:starTwinkle 4s ease-in-out infinite}
+@keyframes starTwinkle{
+  0%,100%{transform:scale(.75);opacity:.3}
+  50%{transform:scale(1.45);opacity:1}
+}
+body.nightfall-active .stage{position:relative;z-index:2}
+body.nightfall-active #toast-area,
+body.nightfall-active .modal{z-index:90}
+body.nightfall-active .glass{border-color:rgba(124,242,255,.16);background:linear-gradient(180deg,rgba(8,12,28,.72),rgba(2,4,12,.58));box-shadow:0 20px 80px rgba(0,0,0,.72)}
+body.nightfall-active .giant{background:radial-gradient(circle at 36% 28%,#f7fbff 0 10%,#c7d9ff 11% 24%,#6478c8 54%,#11183f 100%);color:#f7fbff;text-shadow:0 3px 12px rgba(0,0,0,.65);box-shadow:0 0 32px rgba(199,217,255,.42),0 0 100px rgba(124,242,255,.2),inset 0 -8px 20px rgba(0,0,0,.26)}
+body.nightfall-active #message-box{border:1px solid rgba(124,242,255,.16);background:rgba(3,7,22,.78);color:#eaf7ff}
 
 /* DVD logo used in DVD Mode */
 .dvd-logo{position:fixed;z-index:1000;width:120px;height:60px;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#021018;font-weight:800;border-radius:8px}
