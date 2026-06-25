@@ -9,6 +9,7 @@
   const qs = s => document.querySelector(s);
   const qsa = s => Array.from(document.querySelectorAll(s));
   const rand = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
+  const RICKROLL_CHANCE = 0.00001; // 0.0010% per press
 
   // --- DOM ---
   const btn = qs('#the-button');
@@ -475,12 +476,12 @@ if(visitorGreeting){
   // --- Pranks ---
   const pranks = [
     'fakeUpdate','goose','fakeCall','alien','potato','teleport',
-    'dvd','secretReward','rickroll','brokenScreen'
+    'dvd','secretReward','brokenScreen'
   ];
-  function triggerPrank(){
+  function triggerPrank(forcedChoice=null){
     state.pranks++;
     save();
-    let choice = pranks[rand(0,pranks.length-1)];
+    let choice = forcedChoice || pranks[rand(0,pranks.length-1)];
     runPrank(choice);
     const prankStat = qs('#stat-pranks');
     if(prankStat) prankStat.textContent = state.pranks;
@@ -771,6 +772,7 @@ function alienContact() {
     unlockLore(); checkAchievements(); unlockSkins(true); save(); render();
     // minor chance for secret reward
     if(Math.random()<0.005) triggerPrank();
+    if(Math.random()<RICKROLL_CHANCE) triggerPrank('rickroll');
   }
 
   btn.addEventListener('pointerdown', handleButtonPress);
