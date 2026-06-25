@@ -21,7 +21,9 @@
       })
       .catch(() => {});
 
-    el.addEventListener('click', () => {
+    function recordTap(event){
+      if(event && event.type === 'keydown' && event.key !== 'Enter' && event.key !== ' ') return;
+      if(event && event.type === 'keydown') event.preventDefault();
       const now = Date.now();
       taps = taps.filter(time => now - time <= WINDOW_MS);
       taps.push(now);
@@ -34,7 +36,12 @@
       if(toast && versionInfo && taps.length === 1){
         toast(`Version ${versionInfo.version || '0.0.0'} - build ${versionInfo.build || 'unknown'}`);
       }
-    });
+    }
+
+    el.tabIndex = 0;
+    el.setAttribute('role', 'button');
+    el.addEventListener('pointerdown', recordTap);
+    el.addEventListener('keydown', recordTap);
   };
 
   document.addEventListener('DOMContentLoaded', () => {

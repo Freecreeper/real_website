@@ -42,9 +42,19 @@ PUBLIC_FILES = {
     "skins.js",
     "version-egg.js",
     "page-effects.js",
+    "api-client.js",
     "style.css",
     "version.json",
+    "images/goose.png",
+    "images/broken.png",
 }
+
+
+@app.after_request
+def add_cache_headers(response):
+    if request.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store, max-age=0"
+    return response
 
 
 # -----------------------

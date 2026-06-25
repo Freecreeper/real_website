@@ -44,7 +44,7 @@
   async function renderGoal(){
     let goal = {date:todayKey(), presses:0, target:1000};
     try{
-      const response = await fetch('/api/daily-goal');
+      const response = await window.buttonApiFetch('/api/daily-goal');
       if(response.ok) goal = await response.json();
     }catch(error){
       try{

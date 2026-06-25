@@ -95,7 +95,7 @@
   }
 
   async function loadServerAchievements(gamerTag){
-    const response = await fetch(`/api/achievements?name=${encodeURIComponent(gamerTag)}`);
+    const response = await window.buttonApiFetch(`/api/achievements?name=${encodeURIComponent(gamerTag)}`);
     if(!response.ok) throw new Error('Achievements API unavailable');
     return response.json();
   }

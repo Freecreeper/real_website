@@ -9,7 +9,6 @@
   const qs = s => document.querySelector(s);
   const qsa = s => Array.from(document.querySelectorAll(s));
   const rand = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
-  let lastTouch = 0;
 
   // --- DOM ---
   const btn = qs('#the-button');
@@ -60,15 +59,6 @@
   let skinPreviewIndex = 0;
   let dailyGoal = {date:'', presses:0, target:1000};
   
-document.addEventListener('touchend', e => {
-  const now = Date.now();
-
-  if (now - lastTouch <= 300) {
-    e.preventDefault();
-  }
-
-  lastTouch = now;
-}, { passive: false });
   // --- Data ---
   const messages = [
     'please dont.', 'Interesting choice.','You could be doing homework.','The button appreciates your loyalty.','Your click has been recorded for scientific purposes.','Productivity levels unchanged.','The Department of Button Affairs has been notified.','Your FBI agent is taking notes.','That felt nice, didn\'t it?','A brief moment of joy was added to the universe.','You are now 0.001% closer to a secret.'
@@ -653,12 +643,20 @@ function alienContact() {
   }, 6000);
 }
 
-  // --- Button click handler ---
-  btn.addEventListener('click', ()=>{
+  // --- Button press handler ---
+  let lastPointerPress = 0;
+  function handleButtonPress(event){
+    if(event && event.type === 'click' && Date.now() - lastPointerPress < 450){
+      return;
+    }
+    if(event && event.type === 'pointerdown'){
+      lastPointerPress = Date.now();
+      event.preventDefault();
+    }
     recordClickTime();
     state.presses++;
     recordDailyPress();
-  updateGlobalPresses(1);
+    updateGlobalPresses(1);
     // animations
     btn.animate([{transform:'scale(1)'},{transform:'scale(1.06)'},{transform:'scale(1)'}],{duration:260});
     // color pulse
@@ -668,7 +666,10 @@ function alienContact() {
     unlockLore(); checkAchievements(); unlockSkins(true); save(); render();
     // minor chance for secret reward
     if(Math.random()<0.005) triggerPrank();
-  });
+  }
+
+  btn.addEventListener('pointerdown', handleButtonPress);
+  btn.addEventListener('click', handleButtonPress);
 
   const openStats = qs('#open-stats');
   const openMenu = qs('#open-menu');
@@ -824,14 +825,37 @@ if(countEl){
 
   // --- Global stats (Flask API) integration ---
   const API_BASE = '';// relative path assumes same host (serve Flask alongside static files)
+  function apiBases(){
+    const bases = [API_BASE];
+    if(location.hostname && location.port !== '5000'){
+      bases.push(`${location.protocol}//${location.hostname}:5000`);
+    }
+    return [...new Set(bases)];
+  }
+
+  async function apiFetch(path, options){
+    let lastError = null;
+    for(const base of apiBases()){
+      try{
+        const res = await fetch(base + path, Object.assign({cache:'no-store'}, options || {}));
+        if(res.ok || ![404, 502, 503, 504].includes(res.status)){
+          return res;
+        }
+        lastError = new Error(`${path} returned 404`);
+      }catch(error){
+        lastError = error;
+      }
+    }
+    throw lastError || new Error(`${path} unavailable`);
+  }
 
   async function postVisit(){
-    try{ await fetch(API_BASE + '/api/visit', {method:'POST'}); }catch(e){/*silent fallback*/}
+    try{ await apiFetch('/api/visit', {method:'POST'}); }catch(e){/*silent fallback*/}
   }
 
   async function postPress(delta=1){
-  const res = await fetch(
-    API_BASE + '/api/press',
+  const res = await apiFetch(
+    '/api/press',
     {
       method:'POST',
       headers:{'content-type':'application/json'},
@@ -850,7 +874,7 @@ if(countEl){
 
   async function fetchDailyGoal(){
     try{
-      const res = await fetch(API_BASE + '/api/daily-goal');
+      const res = await apiFetch('/api/daily-goal');
       if(!res.ok) throw new Error('daily goal unavailable');
       dailyGoal = await res.json();
       saveDailyGoalFallback(dailyGoal);
@@ -869,7 +893,7 @@ if(countEl){
 
   async function postDailyPress(delta=1){
     try{
-      const res = await fetch(API_BASE + '/api/daily-press', {
+      const res = await apiFetch('/api/daily-press', {
         method:'POST',
         headers:{'content-type':'application/json'},
         body:JSON.stringify({delta})
@@ -889,7 +913,7 @@ if(countEl){
   }
 
   async function postEvent(type, delta=1){
-    try{ await fetch(API_BASE + '/api/event', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type,delta})}); }catch(e){/*silent*/}
+    try{ await apiFetch('/api/event', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type,delta})}); }catch(e){/*silent*/}
   }
 
   // Count one visit per browser tab.
@@ -902,7 +926,7 @@ if(countEl){
   let globalRefreshTimer = null;
   async function fetchGlobalStats(){
     try{
-      const res = await fetch(API_BASE + '/api/stats');
+      const res = await apiFetch('/api/stats');
       if(!res.ok) throw new Error('noapi');
       const data = await res.json();
       // map keys
