@@ -380,7 +380,7 @@ if(visitorGreeting){
   // --- Pranks ---
   const pranks = [
     'fakeUpdate','goose','fakeCall','alien','potato','teleport',
-    'dvd','secretReward','rickroll','rickroll','rickroll','brokenScreen'
+    'dvd','secretReward','rickroll','brokenScreen'
   ];
   function triggerPrank(){
     state.pranks++;
