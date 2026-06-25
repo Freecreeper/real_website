@@ -220,12 +220,17 @@ def press():
         save_world_firsts(world_firsts)
         save_leaderboard(leaderboard)
 
+        daily_goal = load_daily_goal()
+        daily_goal["presses"] = daily_goal.get("presses", 0) + delta
+        save_daily_goal(daily_goal)
+
     broadcast()
 
     return jsonify(
         ok=True,
         player_presses=player["presses"],
-        new_world_firsts=new_world_firsts
+        new_world_firsts=new_world_firsts,
+        daily_goal=daily_goal
     )
 
 

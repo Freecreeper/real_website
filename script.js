@@ -253,6 +253,21 @@ document.addEventListener('touchend', e => {
     }
   }
 
+  function saveDailyGoalFallback(goal){
+    try{
+      localStorage.setItem('thebutton:daily-goal', JSON.stringify(goal));
+    }catch(error){}
+  }
+
+  function bumpDailyGoalFallback(delta=1){
+    const today = localDateKey();
+    if(dailyGoal.date !== today){
+      dailyGoal = {date:today, presses:0, target:dailyGoal.target || 1000};
+    }
+    dailyGoal.presses = (Number(dailyGoal.presses) || 0) + delta;
+    saveDailyGoalFallback(dailyGoal);
+  }
+
   // --- UI ---
   function render(){
     ensureDaily();
@@ -398,6 +413,13 @@ if(visitorGreeting){
   function updateGlobalPresses(delta=1){
     // attempt to post to server; fallback to localStorage
     postPress(delta).then(data=>{
+      if(data.daily_goal){
+        dailyGoal = data.daily_goal;
+        saveDailyGoalFallback(dailyGoal);
+      } else {
+        bumpDailyGoalFallback(delta);
+      }
+      renderDailyGoal();
       for(const award of data.new_world_firsts || []){
         const title = `World First: ${Number(award.milestone).toLocaleString()} presses`;
         toast(`Exclusive achievement unlocked: ${title}`, {time:6000});
@@ -411,6 +433,8 @@ if(visitorGreeting){
         localStorage.setItem(k,JSON.stringify(g));
         const el = qs('#stat-world-presses'); if(el) el.textContent = g.presses;
       }catch(e){console.warn('global update err',e)}
+      bumpDailyGoalFallback(delta);
+      renderDailyGoal();
     });
   }
   if ('ongesturestart' in window) {
@@ -635,7 +659,6 @@ function alienContact() {
     state.presses++;
     recordDailyPress();
   updateGlobalPresses(1);
-  postDailyPress(1);
     // animations
     btn.animate([{transform:'scale(1)'},{transform:'scale(1.06)'},{transform:'scale(1)'}],{duration:260});
     // color pulse
@@ -830,6 +853,7 @@ if(countEl){
       const res = await fetch(API_BASE + '/api/daily-goal');
       if(!res.ok) throw new Error('daily goal unavailable');
       dailyGoal = await res.json();
+      saveDailyGoalFallback(dailyGoal);
     }catch(e){
       const today = localDateKey();
       try{
