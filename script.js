@@ -9,6 +9,7 @@
   const qs = s => document.querySelector(s);
   const qsa = s => Array.from(document.querySelectorAll(s));
   const rand = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
+  let lastTouch = 0;
 
   // --- DOM ---
   const btn = qs('#the-button');
@@ -24,6 +25,15 @@
   const gamerTagDisplay = qs('#gamer-tag-display');
   const visitorGreeting = qs('#visitor-greeting');
   const sidePanel = qs('#side-panel');
+  const dailyStreakEl = qs('#daily-streak');
+  const dailyPressesEl = qs('#daily-presses');
+  const dailyGoalLabel = qs('#daily-goal-label');
+  const dailyGoalBar = qs('#daily-goal-bar');
+  const dailyGoalCopy = qs('#daily-goal-copy');
+  const prevSkinButton = qs('#prev-skin');
+  const nextSkinButton = qs('#next-skin');
+  const equipSkinButton = qs('#equip-skin');
+  const skinNameEl = qs('#skin-name');
   // --- State ---
   const STORAGE_KEY = 'thebutton:v1';
   let state = {
@@ -34,8 +44,21 @@
     humor:false,
     lastClicks:[],
     pranks:0,
-  timeSpentSeconds: 0,
+    timeSpentSeconds: 0,
+    daily:{
+      date:'',
+      presses:0,
+      streak:0,
+      bestStreak:0,
+      lastPressDate:''
+    },
+    skins:{
+      owned:['classic'],
+      equipped:'classic'
+    }
   };
+  let skinPreviewIndex = 0;
+  let dailyGoal = {date:'', presses:0, target:1000};
   
 document.addEventListener('touchend', e => {
   const now = Date.now();
@@ -90,23 +113,153 @@ document.addEventListener('touchend', e => {
     {id:'a1000',n:1000,title:'Please Go Outside'},
   ];
 
+  const skinDefs = [
+    {id:'classic', name:'Classic', unlock:'Starter skin', requirement:()=>true},
+    {id:'sunrise', name:'Sunrise', unlock:'Press 25 times', requirement:()=>state.presses >= 25},
+    {id:'matrix', name:'Matrix', unlock:'Press 100 times', requirement:()=>state.presses >= 100},
+    {id:'royal', name:'Royal', unlock:'Reach a 3 day streak', requirement:()=>getDaily().streak >= 3},
+    {id:'candy', name:'Candy Pop', unlock:'Press 50 times in one day', requirement:()=>getDaily().presses >= 50},
+    {id:'gold', name:'Gold', unlock:'Press 1,000 times', requirement:()=>state.presses >= 1000}
+  ];
+
   // --- Persistence ---
   function load(){
     try{
       const raw = localStorage.getItem(STORAGE_KEY);
       if(raw) state = Object.assign(state, JSON.parse(raw));
+      migrateState();
     }catch(e){console.warn('load err',e)}
   }
   function save(){
     try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch(e){console.warn('save err',e)}
+  }
+  function migrateState(){
+    state.achievements = Array.isArray(state.achievements) ? state.achievements : [];
+    state.loreSeen = Array.isArray(state.loreSeen) ? state.loreSeen : [];
+    state.lastClicks = Array.isArray(state.lastClicks) ? state.lastClicks : [];
+    state.daily = Object.assign({
+      date:'',
+      presses:0,
+      streak:0,
+      bestStreak:0,
+      lastPressDate:''
+    }, state.daily || {});
+    state.skins = Object.assign({
+      owned:['classic'],
+      equipped:'classic'
+    }, state.skins || {});
+    if(!Array.isArray(state.skins.owned)) state.skins.owned = ['classic'];
+    if(!state.skins.owned.includes('classic')) state.skins.owned.unshift('classic');
+    if(!state.skins.equipped) state.skins.equipped = 'classic';
+    ensureDaily();
+    unlockSkins(false);
+    const equippedIndex = skinDefs.findIndex(s=>s.id === state.skins.equipped);
+    skinPreviewIndex = equippedIndex >= 0 ? equippedIndex : 0;
+  }
+
+  function localDateKey(date=new Date()){
+    const y = date.getFullYear();
+    const m = String(date.getMonth()+1).padStart(2,'0');
+    const d = String(date.getDate()).padStart(2,'0');
+    return `${y}-${m}-${d}`;
+  }
+
+  function daysBetween(a,b){
+    if(!a || !b) return null;
+    const start = new Date(a + 'T00:00:00');
+    const end = new Date(b + 'T00:00:00');
+    return Math.round((end - start) / 86400000);
+  }
+
+  function ensureDaily(){
+    const today = localDateKey();
+    const daily = state.daily || {};
+    if(daily.date !== today){
+      const gap = daysBetween(daily.lastPressDate || daily.date, today);
+      if(gap !== 1){
+        daily.streak = 0;
+      }
+      daily.date = today;
+      daily.presses = 0;
+    }
+    state.daily = daily;
+    return daily;
+  }
+
+  function getDaily(){
+    return ensureDaily();
   }
   function applySavedUser() {
     if(gamerTagDisplay) gamerTagDisplay.textContent = state.gamerTag || "Welcome";
     if(visitorGreeting) visitorGreeting.textContent = "Hello, " + (state.gamerTag || "Traveler");
   }
 
+  function skinById(id){
+    return skinDefs.find(s=>s.id === id) || skinDefs[0];
+  }
+
+  function unlockSkins(showToasts=true){
+    for(const skin of skinDefs){
+      if(skin.requirement() && !state.skins.owned.includes(skin.id)){
+        state.skins.owned.push(skin.id);
+        if(showToasts) toast(`Button skin unlocked: ${skin.name}`);
+      }
+    }
+  }
+
+  function recordDailyPress(){
+    const today = localDateKey();
+    const daily = getDaily();
+    if(daily.presses === 0){
+      const gap = daysBetween(daily.lastPressDate, today);
+      daily.streak = gap === 1 ? (daily.streak || 0) + 1 : 1;
+      daily.bestStreak = Math.max(daily.bestStreak || 0, daily.streak);
+      daily.lastPressDate = today;
+      if(daily.streak > 1) toast(`Daily streak: ${daily.streak} days`);
+    }
+    daily.presses++;
+    daily.date = today;
+  }
+
+  function applyButtonSkin(){
+    if(!btn) return;
+    for(const skin of skinDefs){
+      btn.classList.remove('skin-' + skin.id);
+    }
+    btn.classList.add('skin-' + (state.skins.equipped || 'classic'));
+  }
+
+  function renderSkinPreview(){
+    const skin = skinDefs[skinPreviewIndex] || skinDefs[0];
+    const owned = state.skins.owned.includes(skin.id);
+    if(skinNameEl) skinNameEl.textContent = `${skin.name}${owned ? '' : ' (locked)'}`;
+    if(equipSkinButton){
+      equipSkinButton.disabled = !owned;
+      equipSkinButton.textContent = state.skins.equipped === skin.id ? 'Equipped' : 'Equip';
+    }
+  }
+
+  function renderDailyGoal(){
+    const target = dailyGoal.target || 1000;
+    const presses = dailyGoal.presses || 0;
+    const pct = Math.min(100, Math.round((presses / target) * 100));
+    if(dailyGoalLabel) dailyGoalLabel.textContent = `${presses.toLocaleString()} / ${target.toLocaleString()}`;
+    if(dailyGoalBar) dailyGoalBar.style.width = pct + '%';
+    if(dailyGoalCopy){
+      const remaining = Math.max(0, target - presses);
+      dailyGoalCopy.textContent = remaining === 0
+        ? "Today's community goal is complete. Keep piling on."
+        : `${remaining.toLocaleString()} presses left in today's community goal.`;
+    }
+  }
+
   // --- UI ---
   function render(){
+    ensureDaily();
+    unlockSkins(false);
+    applyButtonSkin();
+    renderSkinPreview();
+    renderDailyGoal();
     if(countEl){
       countEl.textContent = state.presses;
     }
@@ -114,6 +267,15 @@ document.addEventListener('touchend', e => {
     if(statPresses){
     statPresses.textContent = state.presses;
     }
+    const daily = getDaily();
+    if(dailyStreakEl) dailyStreakEl.textContent = daily.streak + (daily.streak === 1 ? ' day' : ' days');
+    if(dailyPressesEl) dailyPressesEl.textContent = daily.presses + (daily.presses === 1 ? ' press' : ' presses');
+    const statDailyPresses = qs('#stat-daily-presses');
+    if(statDailyPresses) statDailyPresses.textContent = daily.presses;
+    const statDailyStreak = qs('#stat-daily-streak');
+    if(statDailyStreak) statDailyStreak.textContent = daily.streak + (daily.streak === 1 ? ' day' : ' days');
+    const equippedSkin = qs('#stat-equipped-skin');
+    if(equippedSkin) equippedSkin.textContent = skinById(state.skins.equipped).name;
     const achEl = qs('#stat-achievements');
     if(achEl){
     achEl.textContent = state.achievements.length;
@@ -122,12 +284,6 @@ document.addEventListener('touchend', e => {
  if(gamerTagDisplay){
   gamerTagDisplay.textContent = state.gamerTag || 'Welcome';
 }
-
-
-let lastTouch = 0;
-
-
-
 
 
 if(visitorGreeting){
@@ -477,14 +633,16 @@ function alienContact() {
   btn.addEventListener('click', ()=>{
     recordClickTime();
     state.presses++;
+    recordDailyPress();
   updateGlobalPresses(1);
+  postDailyPress(1);
     // animations
     btn.animate([{transform:'scale(1)'},{transform:'scale(1.06)'},{transform:'scale(1)'}],{duration:260});
     // color pulse
     btn.style.boxShadow = '0 30px 90px rgba(124,118,255,0.18)'; setTimeout(()=>btn.style.boxShadow='',350);
     // messages
     msgBox.textContent = messages[rand(0,messages.length-1)];
-    unlockLore(); checkAchievements(); save(); render();
+    unlockLore(); checkAchievements(); unlockSkins(true); save(); render();
     // minor chance for secret reward
     if(Math.random()<0.005) triggerPrank();
   });
@@ -503,6 +661,25 @@ function alienContact() {
   if(openAchievements) openAchievements.addEventListener('click', ()=>{ window.location.href = 'achievements.html'; });
   if(openLore) openLore.addEventListener('click', ()=>{ window.location.href = 'lore.html'; });
   if(openLeaderboard) openLeaderboard.addEventListener('click', ()=>{ window.location.href = 'leaderboard.html'; });
+  if(prevSkinButton) prevSkinButton.addEventListener('click', ()=>{
+    skinPreviewIndex = (skinPreviewIndex - 1 + skinDefs.length) % skinDefs.length;
+    renderSkinPreview();
+  });
+  if(nextSkinButton) nextSkinButton.addEventListener('click', ()=>{
+    skinPreviewIndex = (skinPreviewIndex + 1) % skinDefs.length;
+    renderSkinPreview();
+  });
+  if(equipSkinButton) equipSkinButton.addEventListener('click', ()=>{
+    const skin = skinDefs[skinPreviewIndex] || skinDefs[0];
+    if(!state.skins.owned.includes(skin.id)){
+      toast(`${skin.name} is locked. ${skin.unlock}.`);
+      return;
+    }
+    state.skins.equipped = skin.id;
+    save();
+    render();
+    toast(`${skin.name} equipped.`);
+  });
 
   function showCollectionPanel(panelName){
     if(!achievementsPanel || !lorePanel) return;
@@ -545,7 +722,18 @@ function alienContact() {
         humor,
         lastClicks:[],
         pranks:0,
-        timeSpentSeconds:0
+        timeSpentSeconds:0,
+        daily:{
+          date:localDateKey(),
+          presses:0,
+          streak:0,
+          bestStreak:0,
+          lastPressDate:''
+        },
+        skins:{
+          owned:['classic'],
+          equipped:'classic'
+        }
       };
       save();
       render();
@@ -622,7 +810,7 @@ if(countEl){
     try{ await fetch(API_BASE + '/api/visit', {method:'POST'}); }catch(e){/*silent fallback*/}
   }
 
- async function postPress(delta=1){
+  async function postPress(delta=1){
   const res = await fetch(
     API_BASE + '/api/press',
     {
@@ -640,6 +828,45 @@ if(countEl){
   }
   return res.json();
 }
+
+  async function fetchDailyGoal(){
+    try{
+      const res = await fetch(API_BASE + '/api/daily-goal');
+      if(!res.ok) throw new Error('daily goal unavailable');
+      dailyGoal = await res.json();
+    }catch(e){
+      const today = localDateKey();
+      try{
+        const raw = localStorage.getItem('thebutton:daily-goal');
+        const saved = raw ? JSON.parse(raw) : {};
+        dailyGoal = saved.date === today ? saved : {date:today, presses:getDaily().presses, target:1000};
+      }catch(err){
+        dailyGoal = {date:today, presses:getDaily().presses, target:1000};
+      }
+    }
+    renderDailyGoal();
+  }
+
+  async function postDailyPress(delta=1){
+    try{
+      const res = await fetch(API_BASE + '/api/daily-press', {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({delta})
+      });
+      if(!res.ok) throw new Error('daily press failed');
+      dailyGoal = await res.json();
+    }catch(e){
+      const today = localDateKey();
+      dailyGoal = {
+        date:today,
+        presses:(dailyGoal.date === today ? dailyGoal.presses || 0 : 0) + delta,
+        target:dailyGoal.target || 1000
+      };
+      try{ localStorage.setItem('thebutton:daily-goal', JSON.stringify(dailyGoal)); }catch(err){}
+    }
+    renderDailyGoal();
+  }
 
   async function postEvent(type, delta=1){
     try{ await fetch(API_BASE + '/api/event', {method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({type,delta})}); }catch(e){/*silent*/}
@@ -664,6 +891,7 @@ if(countEl){
         total_presses: 'g_total_presses',
         gooses_released: 'g_total_goose',
         potatoes_detected: 'g_total_potato',
+        pranks_triggered: 'g_total_pranks',
         government_investigations: 'g_total_government_investigations',
         button_prime_defeats: 'g_total_button_prime_defeats',
         rickroll_victims: 'g_total_rickroll_victims',
@@ -686,6 +914,7 @@ if(countEl){
 
   // start periodic refresh
   fetchGlobalStats(); globalRefreshTimer = setInterval(fetchGlobalStats, 30000);
+  fetchDailyGoal(); setInterval(fetchDailyGoal, 30000);
 
   // manual refresh/close handlers
   

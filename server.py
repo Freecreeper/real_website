@@ -12,9 +12,11 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 STATS_FILE = os.path.join(BASE_DIR, "stats.json")
 LEADERBOARD_FILE = os.path.join(BASE_DIR, "leaderboard.json")
 WORLD_FIRSTS_FILE = os.path.join(BASE_DIR, "world_firsts.json")
+DAILY_GOAL_FILE = os.path.join(BASE_DIR, "daily_goal.json")
 storage_lock = Lock()
 STANDARD_ACHIEVEMENT_MILESTONES = (10, 25, 50, 100, 500, 1000)
 WORLD_FIRST_INTERVAL = 5000
+DAILY_GOAL_TARGET = 1000
 EVENT_KEYS = {
     "gooses_released",
     "potatoes_detected",
@@ -110,6 +112,36 @@ def load_world_firsts():
 
 def save_world_firsts(data):
     with open(WORLD_FIRSTS_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+
+def today_key():
+    return datetime.now(timezone.utc).date().isoformat()
+
+
+def load_daily_goal():
+    today = today_key()
+    if not os.path.exists(DAILY_GOAL_FILE):
+        return {"date": today, "presses": 0, "target": DAILY_GOAL_TARGET}
+
+    try:
+        with open(DAILY_GOAL_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        data = {}
+
+    if data.get("date") != today:
+        return {"date": today, "presses": 0, "target": DAILY_GOAL_TARGET}
+
+    return {
+        "date": today,
+        "presses": int(data.get("presses", 0)),
+        "target": int(data.get("target", DAILY_GOAL_TARGET)),
+    }
+
+
+def save_daily_goal(data):
+    with open(DAILY_GOAL_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
 
@@ -219,6 +251,30 @@ def event():
     broadcast()
 
     return jsonify(ok=True)
+
+
+@app.get("/api/daily-goal")
+def get_daily_goal():
+    with storage_lock:
+        daily_goal = load_daily_goal()
+        save_daily_goal(daily_goal)
+
+    return jsonify(daily_goal)
+
+
+@app.post("/api/daily-press")
+def daily_press():
+    payload = request.json or {}
+    delta = payload.get("delta", 1)
+    if not isinstance(delta, int) or isinstance(delta, bool) or not 1 <= delta <= 100:
+        return jsonify(error="delta must be an integer from 1 to 100"), 400
+
+    with storage_lock:
+        daily_goal = load_daily_goal()
+        daily_goal["presses"] = daily_goal.get("presses", 0) + delta
+        save_daily_goal(daily_goal)
+
+    return jsonify(daily_goal)
 
 
 @app.get("/api/stats")

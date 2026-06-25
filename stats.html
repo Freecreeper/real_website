@@ -3,65 +3,224 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>The Button — Stats</title>
+  <title>The Button - Profile</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 
-<body>
+<body class="profile-page">
+  <canvas id="particles"></canvas>
+
   <header class="topbar">
-    <div class="brand">Global Stats</div>
-    <a href="index.html" class="pill">Back</a>
+    <a href="index.html" class="brand">The Button</a>
+    <nav class="page-nav" aria-label="Main navigation">
+      <a href="index.html">Button</a>
+      <a href="stats.html" class="active" aria-current="page">Profile</a>
+      <a href="achievements.html">Achievements</a>
+      <a href="lore.html">Lore</a>
+      <a href="leaderboard.html">Leaderboard</a>
+      <span id="version-display"></span>
+    </nav>
   </header>
 
-  <main style="padding:40px;max-width:900px;margin:auto;">
+  <main class="profile-main">
+    <section class="profile-grid">
+      <div class="glass profile-card">
+        <div class="profile-name">
+          <div>
+            <span>Player profile</span>
+            <strong id="profile-name">Traveler</strong>
+          </div>
+          <a class="pill primary" href="index.html">Press</a>
+        </div>
 
-    <section class="glass" style="padding:20px;">
-      <h2>Live Global Stats 🌍</h2>
+        <div class="stat-grid">
+          <div class="stat-tile"><span>Total presses</span><strong id="p_total">0</strong></div>
+          <div class="stat-tile"><span>Today</span><strong id="p_today">0</strong></div>
+          <div class="stat-tile"><span>Daily streak</span><strong id="p_streak">0</strong></div>
+          <div class="stat-tile"><span>Best streak</span><strong id="p_best_streak">0</strong></div>
+          <div class="stat-tile"><span>Achievements</span><strong id="p_achievements">0</strong></div>
+          <div class="stat-tile"><span>Lore found</span><strong id="p_lore">0</strong></div>
+          <div class="stat-tile"><span>Pranks</span><strong id="p_pranks">0</strong></div>
+          <div class="stat-tile"><span>Time on site</span><strong id="p_time">0s</strong></div>
+        </div>
+      </div>
 
-      <ul>
-        <li>Total Visitors: <span id="g_total_visitors">0</span></li>
-        <li>Total Presses: <span id="g_total_presses">0</span></li>
-        <li>Gooses Released: <span id="g_total_goose">0</span></li>
-        <li>Potatoes Detected: <span id="g_total_potato">0</span></li>
-        <li>Pranks Triggered: <span id="g_total_pranks">0</span></li>
-      </ul>
+      <div class="glass profile-card">
+        <h2>Daily Community Goal</h2>
+        <p id="daily-goal-copy" class="muted">Loading today's goal...</p>
+        <div class="goal-track">
+          <span id="daily-goal-bar"></span>
+        </div>
+        <div class="stat-grid" style="margin-top:14px">
+          <div class="stat-tile"><span>Community today</span><strong id="g_daily_presses">0</strong></div>
+          <div class="stat-tile"><span>Goal</span><strong id="g_daily_target">1,000</strong></div>
+        </div>
+      </div>
+
+      <div class="glass profile-card">
+        <h2>Button Skins</h2>
+        <p id="skin-summary" class="muted">Classic equipped.</p>
+        <div id="skin-grid" class="skin-grid"></div>
+      </div>
+
+      <div class="glass profile-card">
+        <h2>Live Global Stats</h2>
+        <div class="stat-grid">
+          <div class="stat-tile"><span>Visitors</span><strong id="g_total_visitors">0</strong></div>
+          <div class="stat-tile"><span>Total presses</span><strong id="g_total_presses">0</strong></div>
+          <div class="stat-tile"><span>Gooses released</span><strong id="g_total_goose">0</strong></div>
+          <div class="stat-tile"><span>Potatoes detected</span><strong id="g_total_potato">0</strong></div>
+          <div class="stat-tile"><span>Pranks triggered</span><strong id="g_total_pranks">0</strong></div>
+          <div class="stat-tile"><span>Achievements</span><strong id="g_total_achievement_unlocks">0</strong></div>
+        </div>
+      </div>
     </section>
-
   </main>
 
-<script>
-const API_BASE = '';
+  <script>
+  const STORAGE_KEY = 'thebutton:v1';
+  const skinDefs = [
+    {id:'classic', name:'Classic', unlock:'Starter skin'},
+    {id:'sunrise', name:'Sunrise', unlock:'Press 25 times'},
+    {id:'matrix', name:'Matrix', unlock:'Press 100 times'},
+    {id:'royal', name:'Royal', unlock:'Reach a 3 day streak'},
+    {id:'candy', name:'Candy Pop', unlock:'Press 50 times in one day'},
+    {id:'gold', name:'Gold', unlock:'Press 1,000 times'}
+  ];
 
-async function fetchStats() {
-  try {
-    const res = await fetch(API_BASE + '/api/stats');
-    const data = await res.json();
-
-    document.getElementById("g_total_visitors").textContent =
-      data.total_visitors || 0;
-
-    document.getElementById("g_total_presses").textContent =
-      data.total_presses || 0;
-
-    document.getElementById("g_total_goose").textContent =
-      data.gooses_released || 0;
-
-    document.getElementById("g_total_potato").textContent =
-      data.potatoes_detected || 0;
-
-    document.getElementById("g_total_pranks").textContent =
-      (data.gooses_released || 0) +
-      (data.potatoes_detected || 0) +
-      (data.alien_contacts || 0) +
-      (data.rickroll_victims || 0);
-
-  } catch (e) {
-    console.error("Stats fetch failed:", e);
+  function qs(s){ return document.querySelector(s); }
+  function localDateKey(date=new Date()){
+    return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
   }
-}
+  function daysBetween(a,b){
+    if(!a || !b) return null;
+    return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000);
+  }
+  function formatTime(sec){
+    if(sec < 60) return sec + 's';
+    const m = Math.floor(sec / 60);
+    if(m < 60) return `${m}m ${sec % 60}s`;
+    return `${Math.floor(m / 60)}h ${m % 60}m`;
+  }
+  function loadState(){
+    const base = {
+      presses:0,
+      achievements:[],
+      loreSeen:[],
+      gamerTag:'Traveler',
+      pranks:0,
+      timeSpentSeconds:0,
+      daily:{date:'', presses:0, streak:0, bestStreak:0, lastPressDate:''},
+      skins:{owned:['classic'], equipped:'classic'}
+    };
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(raw) Object.assign(base, JSON.parse(raw));
+    }catch(e){}
+    base.daily = Object.assign({date:'', presses:0, streak:0, bestStreak:0, lastPressDate:''}, base.daily || {});
+    base.skins = Object.assign({owned:['classic'], equipped:'classic'}, base.skins || {});
+    if(!Array.isArray(base.skins.owned)) base.skins.owned = ['classic'];
+    if(!base.skins.owned.includes('classic')) base.skins.owned.unshift('classic');
+    const today = localDateKey();
+    if(base.daily.date !== today){
+      const gap = daysBetween(base.daily.lastPressDate || base.daily.date, today);
+      if(gap !== 1) base.daily.streak = 0;
+      base.daily.date = today;
+      base.daily.presses = 0;
+    }
+    return base;
+  }
+  function setText(id, value){
+    const el = qs('#' + id);
+    if(el) el.textContent = value;
+  }
+  function renderProfile(){
+    const state = loadState();
+    setText('profile-name', state.gamerTag || 'Traveler');
+    setText('p_total', Number(state.presses || 0).toLocaleString());
+    setText('p_today', Number(state.daily.presses || 0).toLocaleString());
+    setText('p_streak', `${state.daily.streak || 0}d`);
+    setText('p_best_streak', `${state.daily.bestStreak || 0}d`);
+    setText('p_achievements', (state.achievements || []).length);
+    setText('p_lore', (state.loreSeen || []).length);
+    setText('p_pranks', state.pranks || 0);
+    setText('p_time', formatTime(state.timeSpentSeconds || 0));
 
-fetchStats();
-setInterval(fetchStats, 5000);
-</script>
+    const equipped = skinDefs.find(s => s.id === state.skins.equipped) || skinDefs[0];
+    const owned = state.skins.owned || ['classic'];
+    setText('skin-summary', `${equipped.name} equipped. ${owned.length} / ${skinDefs.length} owned.`);
+    const grid = qs('#skin-grid');
+    if(grid){
+      grid.innerHTML = '';
+      for(const skin of skinDefs){
+        const card = document.createElement('div');
+        card.className = 'skin-card' + (owned.includes(skin.id) ? '' : ' locked');
+        card.innerHTML = `<div class="skin-swatch giant skin-${skin.id}"></div><strong>${skin.name}</strong><span>${owned.includes(skin.id) ? (state.skins.equipped === skin.id ? 'Equipped' : 'Owned') : skin.unlock}</span>`;
+        grid.appendChild(card);
+      }
+    }
+  }
+  async function fetchStats(){
+    try{
+      const res = await fetch('/api/stats');
+      const data = await res.json();
+      setText('g_total_visitors', Number(data.total_visitors || 0).toLocaleString());
+      setText('g_total_presses', Number(data.total_presses || 0).toLocaleString());
+      setText('g_total_goose', Number(data.gooses_released || 0).toLocaleString());
+      setText('g_total_potato', Number(data.potatoes_detected || 0).toLocaleString());
+      setText('g_total_pranks', Number(data.pranks_triggered || 0).toLocaleString());
+      setText('g_total_achievement_unlocks', Number(data.achievement_unlocks || 0).toLocaleString());
+    }catch(e){}
+  }
+  async function fetchDailyGoal(){
+    let goal = {date:localDateKey(), presses:0, target:1000};
+    try{
+      const res = await fetch('/api/daily-goal');
+      if(res.ok) goal = await res.json();
+    }catch(e){
+      try{
+        const saved = JSON.parse(localStorage.getItem('thebutton:daily-goal') || '{}');
+        if(saved.date === goal.date) goal = saved;
+      }catch(err){}
+    }
+    const pct = Math.min(100, Math.round(((goal.presses || 0) / (goal.target || 1000)) * 100));
+    const bar = qs('#daily-goal-bar');
+    if(bar) bar.style.width = pct + '%';
+    setText('g_daily_presses', Number(goal.presses || 0).toLocaleString());
+    setText('g_daily_target', Number(goal.target || 1000).toLocaleString());
+    const copy = qs('#daily-goal-copy');
+    if(copy) copy.textContent = `${Math.max(0, (goal.target || 1000) - (goal.presses || 0)).toLocaleString()} presses left today.`;
+  }
+  function initParticles(){
+    const canvas = document.getElementById('particles');
+    if(!canvas) return;
+    const ctx = canvas.getContext('2d');
+    function resize(){ canvas.width = innerWidth; canvas.height = innerHeight; }
+    window.addEventListener('resize', resize);
+    resize();
+    const parts = Array.from({length:60}).map(()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.6+0.6,dx:(Math.random()-0.5)*0.3,dy:(Math.random()-0.5)*0.3}));
+    function frame(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      for(const p of parts){
+        p.x += p.dx; p.y += p.dy;
+        if(p.x < 0) p.x = canvas.width; if(p.x > canvas.width) p.x = 0;
+        if(p.y < 0) p.y = canvas.height; if(p.y > canvas.height) p.y = 0;
+        ctx.beginPath(); ctx.fillStyle = 'rgba(124,118,255,0.06)'; ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
+      }
+      requestAnimationFrame(frame);
+    }
+    frame();
+  }
+
+  renderProfile();
+  fetchStats();
+  fetchDailyGoal();
+  initParticles();
+  fetch('version.json?T=' + Date.now()).then(r=>r.json()).then(v=>{
+    const el = qs('#version-display');
+    if(el) el.textContent = `v${v.version || '0.0.0'} b${String(v.build || 'unknown').split('-').pop()}`;
+  }).catch(()=>{});
+  setInterval(()=>{ renderProfile(); fetchStats(); fetchDailyGoal(); }, 5000);
+  </script>
 </body>
 </html>
