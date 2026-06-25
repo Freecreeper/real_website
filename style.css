@@ -218,12 +218,30 @@ body.panel-open .panel{display:flex;animation:slideIn 260ms ease;}
 .leaderboard-table th,.leaderboard-table td{padding:13px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
 .leaderboard-table th{color:rgba(255,255,255,.5);font-size:11px;text-transform:uppercase}
 .leaderboard-table td{color:#fff}
+.milestone-progress-card{margin-bottom:18px}
+.milestone-list{display:grid;gap:14px}
+.milestone-card{padding:18px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));box-shadow:0 14px 36px rgba(0,0,0,.28)}
+.milestone-card.active{border-color:rgba(124,242,255,.42);background:linear-gradient(180deg,rgba(124,242,255,.1),rgba(255,255,255,.025))}
+.milestone-card.unlocked{border-color:rgba(0,230,168,.26)}
+.milestone-card.locked{opacity:.74}
+.milestone-topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
+.milestone-icon{display:inline-flex;align-items:center;justify-content:center;min-width:76px;height:28px;padding:0 10px;border:1px solid rgba(124,242,255,.24);border-radius:999px;color:var(--accent);font-size:11px;font-weight:900;text-transform:uppercase}
+.milestone-status{padding:5px 8px;border-radius:5px;background:rgba(255,255,255,.055);color:rgba(255,255,255,.66);font-size:10px;font-weight:900;text-transform:uppercase}
+.milestone-card.active .milestone-status{background:rgba(124,242,255,.15);color:var(--accent)}
+.milestone-card.unlocked .milestone-status{background:rgba(0,230,168,.12);color:var(--neon)}
+.milestone-card h2{margin:0 0 6px;font-size:22px;letter-spacing:0}
+.milestone-event{margin:0 0 12px;color:#fff;font-weight:700}
+.milestone-track{margin:12px 0 8px}
+.milestone-columns{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px}
+.milestone-columns h3{margin:0 0 8px;color:rgba(255,255,255,.78);font-size:12px;text-transform:uppercase}
+.milestone-columns ul{margin:0;padding-left:18px;color:rgba(255,255,255,.66);line-height:1.55}
 
 @media (max-width:760px){
   .profile-main{padding-top:132px}
   .profile-grid{grid-template-columns:1fr}
   .profile-name{align-items:start;flex-direction:column}
   .stat-grid,.skin-grid,.menu-grid{grid-template-columns:1fr}
+  .milestone-columns{grid-template-columns:1fr}
   .easter-card h1{font-size:38px}
 }
 

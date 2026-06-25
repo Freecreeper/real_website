@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Button - Global Milestones</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="collection-page milestones-page">
+  <canvas id="particles"></canvas>
+
+  <header class="topbar">
+    <a href="index.html" class="brand">The Button</a>
+    <nav class="page-nav" aria-label="Main navigation">
+      <a href="index.html">Button</a>
+      <a href="menu.html">Menu</a>
+      <a href="global-milestones.html" class="active" aria-current="page">Milestones</a>
+      <span id="version-display"></span>
+    </nav>
+  </header>
+
+  <main class="collection-main">
+    <header class="collection-heading">
+      <div>
+        <p class="eyebrow">Whole-world events</p>
+        <h1>Global Milestones</h1>
+        <p id="milestone-summary" class="muted">Loading global progress...</p>
+      </div>
+      <div class="achievement-total">
+        <strong id="global-press-count">0</strong>
+        <span>global presses</span>
+      </div>
+    </header>
+
+    <section class="glass milestone-progress-card">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Next event</p>
+          <h2 id="next-milestone-title">Finding signal...</h2>
+        </div>
+        <span id="next-milestone-count" class="muted"></span>
+      </div>
+      <div class="goal-track milestone-track">
+        <span id="next-milestone-bar"></span>
+      </div>
+      <p id="next-milestone-copy" class="muted"></p>
+    </section>
+
+    <section id="milestone-list" class="milestone-list" aria-label="Global milestone events"></section>
+  </main>
+
+  <footer class="footer">
+    <span class="creator-credit">Made by Zane</span>
+  </footer>
+
+  <script src="version-egg.js"></script>
+  <script src="api-client.js"></script>
+  <script src="global-milestones.js"></script>
+  <script src="page-effects.js"></script>
+</body>
+</html>

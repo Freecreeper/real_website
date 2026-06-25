@@ -415,6 +415,10 @@ if(visitorGreeting){
         toast(`Exclusive achievement unlocked: ${title}`, {time:6000});
         showAchievementPopup(title);
       }
+      for(const milestone of data.new_global_milestones || []){
+        toast(`Global milestone unlocked: ${milestone.title}`, {time:7000});
+        showAchievementPopup(`${Number(milestone.threshold).toLocaleString()} - ${milestone.title}`);
+      }
     }).catch(()=>{
       const k='thebutton:global';
       try{

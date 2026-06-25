@@ -3,7 +3,7 @@ from flask_socketio import SocketIO, emit
 import json
 import os
 from threading import Lock
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, static_folder=None)
@@ -13,10 +13,83 @@ STATS_FILE = os.path.join(BASE_DIR, "stats.json")
 LEADERBOARD_FILE = os.path.join(BASE_DIR, "leaderboard.json")
 WORLD_FIRSTS_FILE = os.path.join(BASE_DIR, "world_firsts.json")
 DAILY_GOAL_FILE = os.path.join(BASE_DIR, "daily_goal.json")
+GLOBAL_MILESTONES_FILE = os.path.join(BASE_DIR, "global_milestones.json")
 storage_lock = Lock()
 STANDARD_ACHIEVEMENT_MILESTONES = (10, 25, 50, 100, 500, 1000)
 WORLD_FIRST_INTERVAL = 5000
 DAILY_GOAL_TARGET = 1000
+GLOBAL_MILESTONE_DEFS = [
+    {
+        "id": "first-era",
+        "threshold": 10000,
+        "icon": "Moon",
+        "title": "The Night Falls",
+        "event": "The First Era has ended...",
+        "active_hours": 24,
+        "effects": ["Screen fades to black", "Music changes", "Stars appear", "The button glows"],
+        "rewards": ["First Era badge for everyone who presses during the event", "Small chance for the Moon Button skin"],
+    },
+    {
+        "id": "meteor",
+        "threshold": 20000,
+        "icon": "Meteor",
+        "title": "Meteor Impact",
+        "event": "A meteor crashes into the button.",
+        "active_hours": 48,
+        "effects": ["Countdown near impact", "Whole page shake", "Dust everywhere", "Permanent crack on the button"],
+        "rewards": ["Meteor Badge for everyone online", "Meteor Button skin drop chance for 48 hours"],
+    },
+    {
+        "id": "divide",
+        "threshold": 50000,
+        "icon": "Divide",
+        "title": "The Great Divide",
+        "event": "Choose Red or Blue for the season.",
+        "active_hours": None,
+        "effects": ["The screen splits", "Every press helps your team", "Season-long team choice"],
+        "rewards": ["Winning team gets an exclusive champion skin", "MVPs get a special title"],
+    },
+    {
+        "id": "alien",
+        "threshold": 100000,
+        "icon": "Alien",
+        "title": "Alien Contact",
+        "event": "Aliens hack the website.",
+        "active_hours": 168,
+        "effects": ["Page glitches", "Random weird sounds", "The button floats", "UFOs fly across the page"],
+        "rewards": ["Alien button skin available for a week"],
+    },
+    {
+        "id": "surge",
+        "threshold": 250000,
+        "icon": "Surge",
+        "title": "Power Surge",
+        "event": "Lightning hits. Everything glows.",
+        "active_hours": 24,
+        "effects": ["Every press counts as two for one day", "Lightning effects", "Fireworks for everyone"],
+        "rewards": ["One-day double press event"],
+    },
+    {
+        "id": "space",
+        "threshold": 500000,
+        "icon": "Space",
+        "title": "Into Space",
+        "event": "The button leaves Earth.",
+        "active_hours": None,
+        "effects": ["Space background", "Moving stars", "Rotating Earth", "Floating button and gravity effects"],
+        "rewards": ["Galaxy button becomes obtainable"],
+    },
+    {
+        "id": "million",
+        "threshold": 1000000,
+        "icon": "Crown",
+        "title": "One Million",
+        "event": "The Button reaches one million presses.",
+        "active_hours": None,
+        "effects": ["Confetti", "Fireworks", "Golden button", "Credits rolling"],
+        "rewards": ["Million Club Badge for everyone online", "Never obtainable again"],
+    },
+]
 EVENT_KEYS = {
     "gooses_released",
     "potatoes_detected",
@@ -29,6 +102,7 @@ PUBLIC_FILES = {
     "index.html",
     "menu.html",
     "daily.html",
+    "global-milestones.html",
     "skins.html",
     "easter-egg.html",
     "achievements.html",
@@ -39,6 +113,7 @@ PUBLIC_FILES = {
     "stats.html",
     "script.js",
     "daily.js",
+    "global-milestones.js",
     "skins.js",
     "version-egg.js",
     "page-effects.js",
@@ -169,6 +244,70 @@ def save_daily_goal(data):
     save_json_atomic(DAILY_GOAL_FILE, data)
 
 
+def load_global_milestone_unlocks():
+    if not os.path.exists(GLOBAL_MILESTONES_FILE):
+        return {}
+
+    try:
+        with open(GLOBAL_MILESTONES_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def save_global_milestone_unlocks(data):
+    save_json_atomic(GLOBAL_MILESTONES_FILE, data)
+
+
+def update_global_milestone_unlocks(previous_presses, total_presses):
+    unlocks = load_global_milestone_unlocks()
+    now = datetime.now(timezone.utc).isoformat()
+    new_unlocks = []
+
+    for milestone in GLOBAL_MILESTONE_DEFS:
+        milestone_id = milestone["id"]
+        if previous_presses < milestone["threshold"] <= total_presses and milestone_id not in unlocks:
+            unlocks[milestone_id] = {"unlocked_at": now}
+            new_unlocks.append(milestone)
+
+    if new_unlocks:
+        save_global_milestone_unlocks(unlocks)
+
+    return unlocks, new_unlocks
+
+
+def serialize_global_milestones(total_presses):
+    unlocks = load_global_milestone_unlocks()
+    changed = False
+    now = datetime.now(timezone.utc)
+
+    for milestone in GLOBAL_MILESTONE_DEFS:
+        if total_presses >= milestone["threshold"] and milestone["id"] not in unlocks:
+            unlocks[milestone["id"]] = {"unlocked_at": now.isoformat()}
+            changed = True
+
+    if changed:
+        save_global_milestone_unlocks(unlocks)
+
+    serialized = []
+    for milestone in GLOBAL_MILESTONE_DEFS:
+        item = dict(milestone)
+        unlock = unlocks.get(milestone["id"])
+        item["status"] = "locked"
+        if unlock:
+            unlocked_at = datetime.fromisoformat(unlock["unlocked_at"])
+            item["unlocked_at"] = unlock["unlocked_at"]
+            if milestone["active_hours"]:
+                active_until = unlocked_at + timedelta(hours=milestone["active_hours"])
+                item["active_until"] = active_until.isoformat()
+                item["status"] = "active" if now < active_until else "unlocked"
+            else:
+                item["status"] = "unlocked"
+        serialized.append(item)
+
+    return serialized
+
+
 def achievement_count(presses, exclusive_achievements):
     standard_count = sum(presses >= milestone for milestone in STANDARD_ACHIEVEMENT_MILESTONES)
     return standard_count + len(exclusive_achievements)
@@ -195,8 +334,10 @@ def press():
         return jsonify(error="delta must be an integer from 1 to 100"), 400
 
     new_world_firsts = []
+    new_global_milestones = []
     with storage_lock:
         stats = load_stats()
+        previous_total_presses = int(stats.get("total_presses", 0))
         stats["total_presses"] = stats.get("total_presses", 0) + delta
         save_stats(stats)
 
@@ -239,6 +380,10 @@ def press():
         daily_goal = load_daily_goal()
         daily_goal["presses"] = daily_goal.get("presses", 0) + delta
         save_daily_goal(daily_goal)
+        _, new_global_milestones = update_global_milestone_unlocks(
+            previous_total_presses,
+            stats["total_presses"]
+        )
 
     broadcast()
 
@@ -246,7 +391,8 @@ def press():
         ok=True,
         player_presses=player["presses"],
         new_world_firsts=new_world_firsts,
-        daily_goal=daily_goal
+        daily_goal=daily_goal,
+        new_global_milestones=new_global_milestones
     )
 
 
@@ -309,6 +455,24 @@ def daily_press():
 @app.get("/api/stats")
 def stats():
     return jsonify(load_stats())
+
+
+@app.get("/api/global-milestones")
+def global_milestones():
+    with storage_lock:
+        current_stats = load_stats()
+        total_presses = int(current_stats.get("total_presses", 0))
+        milestones = serialize_global_milestones(total_presses)
+
+    next_milestone = next(
+        (milestone for milestone in milestones if total_presses < milestone["threshold"]),
+        None
+    )
+    return jsonify(
+        total_presses=total_presses,
+        next_milestone=next_milestone,
+        milestones=milestones
+    )
 
 
 # -----------------------
