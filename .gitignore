@@ -1,0 +1,6 @@
+# Live server data - do not track with Git
+leaderboard.json
+stats.json
+daily_goal.json
+global_milestones.json
+app.log
