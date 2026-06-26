@@ -3,6 +3,7 @@
   const skinDefs = [
     {id:'classic', name:'Classic', unlock:'Starter skin', requirement:state => true},
     {id:'moon', name:'Moon', unlock:'Drops during The Night Falls event', requirement:state => (state.skins?.owned || []).includes('moon')},
+    {id:'meteor', name:'Meteor', unlock:'Drops during Meteor Impact', requirement:state => (state.skins?.owned || []).includes('meteor')},
     {id:'sunrise', name:'Sunrise', unlock:'Press 25 times', requirement:state => Number(state.presses || 0) >= 25},
     {id:'matrix', name:'Matrix', unlock:'Press 100 times', requirement:state => Number(state.presses || 0) >= 100},
     {id:'royal', name:'Royal', unlock:'Reach a 3 day streak', requirement:state => Number((state.daily || {}).streak || 0) >= 3},

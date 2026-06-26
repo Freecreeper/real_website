@@ -20,6 +20,7 @@ STANDARD_ACHIEVEMENT_MILESTONES = (10, 25, 50, 100, 500, 1000)
 WORLD_FIRST_INTERVAL = 5000
 DAILY_GOAL_TARGET = 1000
 MOON_SKIN_DROP_CHANCE = 0.05
+METEOR_SKIN_DROP_CHANCE = 0.05
 GLOBAL_MILESTONE_DEFS = [
     {
         "id": "first-era",
@@ -345,7 +346,7 @@ def active_global_milestone(milestone_id):
     return datetime.now(timezone.utc) < active_until
 
 
-def apply_first_era_rewards(player):
+def apply_global_event_rewards(player):
     rewards = {
         "event_achievements": [],
         "skins": []
@@ -353,16 +354,23 @@ def apply_first_era_rewards(player):
     player.setdefault("event_achievements", [])
     player.setdefault("skins", [])
 
-    if not active_global_milestone("first-era"):
-        return rewards
+    if active_global_milestone("first-era"):
+        if "first-era" not in player["event_achievements"]:
+            player["event_achievements"].append("first-era")
+            rewards["event_achievements"].append("first-era")
 
-    if "first-era" not in player["event_achievements"]:
-        player["event_achievements"].append("first-era")
-        rewards["event_achievements"].append("first-era")
+        if "moon" not in player["skins"] and random.random() < MOON_SKIN_DROP_CHANCE:
+            player["skins"].append("moon")
+            rewards["skins"].append("moon")
 
-    if "moon" not in player["skins"] and random.random() < MOON_SKIN_DROP_CHANCE:
-        player["skins"].append("moon")
-        rewards["skins"].append("moon")
+    if active_global_milestone("meteor"):
+        if "meteor" not in player["event_achievements"]:
+            player["event_achievements"].append("meteor")
+            rewards["event_achievements"].append("meteor")
+
+        if "meteor" not in player["skins"] and random.random() < METEOR_SKIN_DROP_CHANCE:
+            player["skins"].append("meteor")
+            rewards["skins"].append("meteor")
 
     return rewards
 
@@ -448,7 +456,7 @@ def press():
             previous_total_presses,
             stats["total_presses"]
         )
-        event_rewards = apply_first_era_rewards(player)
+        event_rewards = apply_global_event_rewards(player)
         player["achievements"] = achievement_count(
             player["presses"],
             player["exclusive_achievements"]

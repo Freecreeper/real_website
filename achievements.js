@@ -13,6 +13,11 @@
       id:'first-era',
       title:'First Era Badge',
       description:'Press during The Night Falls global event.'
+    },
+    {
+      id:'meteor',
+      title:'Meteor Badge',
+      description:'Press during the Meteor Impact global event.'
     }
   ];
 

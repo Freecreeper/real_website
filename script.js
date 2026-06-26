@@ -62,6 +62,7 @@
   let dailyGoal = {date:'', presses:0, target:1000};
   let nightFallsActive = false;
   let nightFallsAudio = null;
+  let meteorUnlocked = false;
   
   // --- Data ---
   const messages = [
@@ -110,6 +111,7 @@
   const skinDefs = [
     {id:'classic', name:'Classic', unlock:'Starter skin', requirement:()=>true},
     {id:'moon', name:'Moon', unlock:'Drops during The Night Falls', requirement:()=>state.skins.owned.includes('moon')},
+    {id:'meteor', name:'Meteor', unlock:'Drops during Meteor Impact', requirement:()=>state.skins.owned.includes('meteor')},
     {id:'sunrise', name:'Sunrise', unlock:'Press 25 times', requirement:()=>state.presses >= 25},
     {id:'matrix', name:'Matrix', unlock:'Press 100 times', requirement:()=>state.presses >= 100},
     {id:'royal', name:'Royal', unlock:'Reach a 3 day streak', requirement:()=>getDaily().streak >= 3},
@@ -215,6 +217,9 @@
         if(achievement === 'first-era'){
           toast('Event badge unlocked: First Era', {time:6000});
           showAchievementPopup('First Era Badge');
+        }else if(achievement === 'meteor'){
+          toast('Event badge unlocked: Meteor', {time:6000});
+          showAchievementPopup('Meteor Badge');
         }
       }
     }
@@ -222,7 +227,9 @@
     for(const skin of rewards.skins || []){
       if(!state.skins.owned.includes(skin)){
         state.skins.owned.push(skin);
-        toast(skin === 'moon' ? 'Rare skin dropped: Moon Button' : `Skin dropped: ${skin}`, {time:7000});
+        const skinName = skin === 'moon' ? 'Moon Button' : (skin === 'meteor' ? 'Meteor Button' : skin);
+        toast(`Rare skin dropped: ${skinName}`, {time:7000});
+        showSkinDropPopup(skin, skinName);
       }
     }
   }
@@ -313,6 +320,45 @@
 
   function milestoneIsActive(milestone){
     return milestone && milestone.status === 'active';
+  }
+
+  function ensureMeteorLayer(){
+    let layer = qs('#meteor-impact-layer');
+    if(layer) return layer;
+    layer = document.createElement('div');
+    layer.id = 'meteor-impact-layer';
+    layer.setAttribute('aria-hidden', 'true');
+    layer.innerHTML = '<span class="meteor-rock"></span><span class="meteor-dust dust-a"></span><span class="meteor-dust dust-b"></span><span class="meteor-dust dust-c"></span>';
+    document.body.appendChild(layer);
+    return layer;
+  }
+
+  function triggerMeteorImpactIntro(){
+    ensureMeteorLayer();
+    document.body.classList.add('meteor-impact-intro');
+    setTimeout(()=>document.body.classList.remove('meteor-impact-intro'), 3600);
+  }
+
+  function applyMeteorEvent(milestone, totalPresses=0, animate=false){
+    const active = milestone && milestone.status === 'active';
+    meteorUnlocked = Boolean(active);
+    document.body.classList.toggle('meteor-active', meteorUnlocked);
+
+    if(!milestone || milestone.status !== 'locked'){
+      if(milestone && milestone.status === 'active' && msgBox){
+        msgBox.textContent = 'Meteor Impact is active. Press now for the Meteor Badge and a chance at the Meteor Button skin.';
+      }
+      if(animate) triggerMeteorImpactIntro();
+      return;
+    }
+
+    const remaining = milestone.threshold - Number(totalPresses || 0);
+    if(remaining > 0 && remaining <= 4){
+      document.body.classList.add('meteor-countdown');
+      if(msgBox) msgBox.textContent = `${Number(totalPresses || 0).toLocaleString()}... impact in ${remaining}`;
+    }else{
+      document.body.classList.remove('meteor-countdown');
+    }
   }
 
   function renderSkinPreview(){
@@ -447,6 +493,25 @@ if(visitorGreeting){
     setTimeout(()=>el.remove(), 2500);
   }
 
+  function showSkinDropPopup(skinId, skinName){
+    const modal = document.createElement('div');
+    modal.className = 'modal skin-drop-modal';
+    const card = document.createElement('div');
+    card.className = 'modal-card glass skin-drop-card';
+    card.innerHTML = `
+      <p class="eyebrow">Rare skin unlocked</p>
+      <div class="skin-drop-preview giant skin-${skinId}">THE BUTTON</div>
+      <h3>${skinName}</h3>
+      <p class="muted">It has been added to your skin inventory.</p>
+      <button class="pill primary" type="button">Nice</button>
+    `;
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+    const close = () => modal.remove();
+    card.querySelector('button').addEventListener('click', close);
+    setTimeout(close, 9000);
+  }
+
   // --- Lore unlocking ---
   function unlockLore(){
     if(state.presses>0 && state.presses%25===0){
@@ -476,7 +541,7 @@ if(visitorGreeting){
   // --- Pranks ---
   const pranks = [
     'fakeUpdate','goose','fakeCall','alien','potato','teleport',
-    'dvd','secretReward','brokenScreen'
+    'dvd','secretReward','stanwe','brokenScreen'
   ];
   function triggerPrank(forcedChoice=null){
     state.pranks++;
@@ -516,6 +581,8 @@ if(visitorGreeting){
         showAchievementPopup(`${Number(milestone.threshold).toLocaleString()} - ${milestone.title}`);
         if(milestone.id === 'first-era'){
           applyNightFallsEvent(true, true);
+        }else if(milestone.id === 'meteor'){
+          applyMeteorEvent(milestone, 20000, true);
         }
       }
       applyEventRewards(data.event_rewards);
@@ -547,6 +614,7 @@ if(visitorGreeting){
       case 'teleport': prankTeleport(); break;
       case 'dvd': prankDVD(); break;
       case 'secretReward': prankSecretReward(); break;
+      case 'stanwe': prankStanwe(); break;
       case 'rickroll': prankRickroll(); break;
       case 'brokenScreen': prankBrokenScreen(); break;
       default: toast('Something strange happened.');
@@ -677,6 +745,23 @@ function alienContact() {
     card.innerHTML=`<h3>🎁 Secret Reward Unlocked</h3><p class='muted'>Click to claim.</p><div style='display:flex;justify-content:center'><button id='claim' class='pill primary'>Claim Reward</button></div>`;
     modal.appendChild(card); document.body.appendChild(modal);
     card.querySelector('#claim').onclick = ()=>{ card.querySelector('p').textContent='Processing...'; setTimeout(()=>{card.querySelector('p').textContent='Congratulations. You won absolutely nothing.'; card.querySelector('#claim').remove(); setTimeout(()=>modal.remove(),2200);},1600); };
+  }
+
+  function prankStanwe(){
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    const card = document.createElement('div');
+    card.className = 'modal-card glass';
+    card.innerHTML = `
+      <h3>Important Question</h3>
+      <p class="muted">do ya whant a swip of me Stanwe</p>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="pill primary" type="button">ok</button>
+      </div>
+    `;
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+    card.querySelector('button').addEventListener('click', () => modal.remove());
   }
 
  function prankRickroll() {
@@ -1073,7 +1158,9 @@ if(countEl){
       if(!res.ok) throw new Error('milestone API unavailable');
       const data = await res.json();
       const firstEra = (data.milestones || []).find(milestone => milestone.id === 'first-era');
+      const meteor = (data.milestones || []).find(milestone => milestone.id === 'meteor');
       applyNightFallsEvent(milestoneIsActive(firstEra), false);
+      applyMeteorEvent(meteor, data.total_presses || 0, false);
     }catch(e){ /* keep the normal button page if the API is unavailable */ }
   }
 

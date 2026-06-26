@@ -66,6 +66,7 @@ body.nightfall-intro::after{
 .giant{ --size:220px; width:var(--size); height:var(--size); border-radius:50%; border:none; cursor:pointer; font-weight:800; font-size:20px; letter-spacing:2px; color:#031018; background:linear-gradient(180deg,var(--accent),var(--accent-2)); box-shadow:0 20px 50px rgba(124,118,255,0.12), inset 0 -6px 18px rgba(0,0,0,0.12); transition:transform 120ms cubic-bezier(.2,.9,.2,1), box-shadow 180ms; display:flex;align-items:center;justify-content:center;touch-action:manipulation;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
 .giant.skin-classic{background:linear-gradient(180deg,var(--accent),var(--accent-2))}
 .giant.skin-moon{background:radial-gradient(circle at 35% 25%,#ffffff 0 9%,#d7e7ff 10% 18%,#7e94c9 45%,#151d3d 100%);color:#f7fbff;text-shadow:0 2px 10px rgba(0,0,0,.45)}
+.giant.skin-meteor{background:radial-gradient(circle at 35% 25%,#ffefc7 0 10%,#ff8b3d 24%,#8f2e14 56%,#2a120c 100%);color:#fff4dc;text-shadow:0 2px 10px rgba(0,0,0,.55)}
 .giant.skin-sunrise{background:linear-gradient(180deg,#ffd166,#ef476f);color:#241106}
 .giant.skin-matrix{background:linear-gradient(180deg,#00e6a8,#0b6e4f);color:#02140e}
 .giant.skin-royal{background:linear-gradient(180deg,#d7b8ff,#6d44ff);color:#12071f}
@@ -131,6 +132,25 @@ body.nightfall-active .modal{z-index:90}
 body.nightfall-active .glass{border-color:rgba(124,242,255,.16);background:linear-gradient(180deg,rgba(8,12,28,.72),rgba(2,4,12,.58));box-shadow:0 20px 80px rgba(0,0,0,.72)}
 body.nightfall-active .giant{background:radial-gradient(circle at 36% 28%,#f7fbff 0 10%,#c7d9ff 11% 24%,#6478c8 54%,#11183f 100%);color:#f7fbff;text-shadow:0 3px 12px rgba(0,0,0,.65);box-shadow:0 0 32px rgba(199,217,255,.42),0 0 100px rgba(124,242,255,.2),inset 0 -8px 20px rgba(0,0,0,.26)}
 body.nightfall-active #message-box{border:1px solid rgba(124,242,255,.16);background:rgba(3,7,22,.78);color:#eaf7ff}
+#meteor-impact-layer{position:fixed;inset:0;z-index:88;pointer-events:none;overflow:hidden;display:none}
+.meteor-rock{position:absolute;right:-160px;top:-120px;width:92px;height:92px;border-radius:50%;background:radial-gradient(circle at 34% 30%,#ffe0a0,#ff7b2e 42%,#35140c 78%);box-shadow:0 0 34px rgba(255,123,46,.75),-80px 80px 34px rgba(255,90,32,.22)}
+.meteor-dust{position:absolute;left:50%;top:54%;width:28px;height:28px;border-radius:50%;background:rgba(210,175,132,.42);filter:blur(2px);opacity:0}
+body.meteor-impact-intro{animation:meteorPageShake 900ms linear 1250ms 2}
+body.meteor-impact-intro #meteor-impact-layer{display:block}
+body.meteor-impact-intro .meteor-rock{animation:meteorFall 1800ms cubic-bezier(.2,.8,.15,1) forwards}
+body.meteor-impact-intro .dust-a{animation:meteorDust 1500ms ease-out 1450ms forwards}
+body.meteor-impact-intro .dust-b{animation:meteorDust 1700ms ease-out 1500ms forwards;transform:translate(-90px,20px)}
+body.meteor-impact-intro .dust-c{animation:meteorDust 1900ms ease-out 1550ms forwards;transform:translate(90px,30px)}
+body.meteor-active .giant{position:relative;overflow:hidden}
+body.meteor-active .giant::after,.giant.skin-meteor::after{content:"";position:absolute;inset:22%;background:linear-gradient(116deg,transparent 0 45%,rgba(15,8,4,.72) 46% 49%,transparent 50%),linear-gradient(62deg,transparent 0 54%,rgba(15,8,4,.55) 55% 58%,transparent 59%),linear-gradient(150deg,transparent 0 44%,rgba(255,230,186,.38) 45% 46%,transparent 47%);pointer-events:none}
+body.meteor-countdown .giant{box-shadow:0 0 30px rgba(255,123,46,.45),0 20px 60px rgba(255,80,32,.18),inset 0 -6px 18px rgba(0,0,0,.18)}
+@keyframes meteorFall{0%{transform:translate(0,0) rotate(0deg)}72%{transform:translate(-58vw,54vh) rotate(-340deg)}100%{transform:translate(-58vw,54vh) scale(.08);opacity:0}}
+@keyframes meteorDust{0%{opacity:0;transform:translate(0,0) scale(.3)}30%{opacity:.78}100%{opacity:0;transform:translate(-120px,-30px) scale(8)}}
+@keyframes meteorPageShake{0%,100%{transform:translate(0,0)}20%{transform:translate(-10px,6px)}40%{transform:translate(9px,-5px)}60%{transform:translate(-6px,-8px)}80%{transform:translate(8px,4px)}}
+.skin-drop-modal{z-index:150}
+.skin-drop-card{align-items:center;text-align:center}
+.skin-drop-preview{--size:132px;font-size:13px;letter-spacing:1px;box-shadow:0 0 38px rgba(124,242,255,.2),inset 0 -6px 18px rgba(0,0,0,.18)}
+.skin-drop-card h3{margin:0;font-size:28px}
 
 /* DVD logo used in DVD Mode */
 .dvd-logo{position:fixed;z-index:1000;width:120px;height:60px;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#021018;font-weight:800;border-radius:8px}
