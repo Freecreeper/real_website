@@ -70,6 +70,21 @@
       setPushStatus('HTTPS Needed', 'bad', 'Notifications require https://pressthebutton.click.');
       return;
     }
+    try{
+      const configRes = await window.buttonApiFetch('/api/push/config');
+      if(configRes.status === 404){
+        setPushStatus('Update Needed', 'bad', 'The server does not have push routes yet. Deploy this code and restart Flask.');
+        return;
+      }
+      const config = configRes.ok ? await configRes.json() : {};
+      if(!config.enabled){
+        setPushStatus('Server Off', 'warn', 'Push routes exist, but VAPID keys are not configured on the server yet.');
+        return;
+      }
+    }catch(error){
+      setPushStatus('API Offline', 'bad', 'Could not reach the Flask API.');
+      return;
+    }
     if(Notification.permission === 'denied'){
       setPushStatus('Blocked', 'bad', 'Notifications are blocked in browser settings.');
       return;
@@ -101,6 +116,10 @@
     }
 
     const configRes = await window.buttonApiFetch('/api/push/config');
+    if(configRes.status === 404){
+      setPushStatus('Update Needed', 'bad', 'The server does not have push routes yet. Deploy this code and restart Flask.');
+      return null;
+    }
     const config = configRes.ok ? await configRes.json() : {};
     if(!config.enabled || !config.public_key){
       setPushStatus('Server Off', 'bad', 'Push is not configured on the server yet.');
