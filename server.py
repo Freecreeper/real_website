@@ -559,27 +559,39 @@ def ensure_known_world_firsts():
         for milestone, name in KNOWN_WORLD_FIRST_CLAIMS.items():
             conn.execute(
                 """
-                INSERT OR IGNORE INTO world_firsts(milestone, name, claimed_at)
+                INSERT INTO world_firsts(milestone, name, claimed_at)
                 VALUES (?, ?, ?)
+                ON CONFLICT(milestone) DO UPDATE SET
+                    name = excluded.name
                 """,
                 (int(milestone), name, now),
             )
-            row = conn.execute(
-                "SELECT exclusive_achievements FROM players WHERE name = ?",
-                (name,),
-            ).fetchone()
-            if row:
+            rows = conn.execute(
+                "SELECT name, presses, exclusive_achievements, event_achievements FROM players"
+            ).fetchall()
+            for row in rows:
                 achievements = parse_json_list(row["exclusive_achievements"])
-                if milestone not in achievements:
+                if row["name"] == name and milestone not in achievements:
                     achievements.append(milestone)
-                    conn.execute(
-                        """
-                        UPDATE players
-                        SET exclusive_achievements = ?, achievements = achievements + 1, updated_at = ?
-                        WHERE name = ?
-                        """,
-                        (dumps_json(achievements), now, name),
-                    )
+                elif row["name"] != name and milestone in achievements:
+                    achievements = [item for item in achievements if item != milestone]
+                else:
+                    continue
+
+                event_achievements = parse_json_list(row["event_achievements"])
+                conn.execute(
+                    """
+                    UPDATE players
+                    SET exclusive_achievements = ?, achievements = ?, updated_at = ?
+                    WHERE name = ?
+                    """,
+                    (
+                        dumps_json(achievements),
+                        achievement_count(int(row["presses"] or 0), achievements) + len(event_achievements),
+                        now,
+                        row["name"],
+                    ),
+                )
 
 
 def today_key():
@@ -961,8 +973,12 @@ def press():
     payload = request.json or {}
     delta = payload.get("delta", 1)
     name = clean_player_name(payload.get("name", "Anonymous"))
+    client_presses = payload.get("presses")
     if not isinstance(delta, int) or isinstance(delta, bool) or not 1 <= delta <= 100:
         return jsonify(error="delta must be an integer from 1 to 100"), 400
+    if client_presses is not None:
+        if not isinstance(client_presses, int) or isinstance(client_presses, bool) or client_presses < 0:
+            return jsonify(error="presses must be a non-negative integer"), 400
     if is_rejected_name(name):
         return jsonify(error="you cant do that"), 403
 
@@ -973,8 +989,6 @@ def press():
     with storage_lock:
         stats = repair_total_presses(load_stats())
         previous_total_presses = int(stats.get("total_presses", 0))
-        stats["total_presses"] = stats.get("total_presses", 0) + delta
-        save_stats(stats)
 
         leaderboard = load_leaderboard()
         if name not in leaderboard:
@@ -991,7 +1005,11 @@ def press():
         player.setdefault("event_achievements", [])
         player.setdefault("skins", [])
         previous_presses = int(player.get("presses", 0))
-        player["presses"] = previous_presses + delta
+        player["presses"] = max(previous_presses + delta, client_presses or 0)
+        added_presses = max(0, player["presses"] - previous_presses)
+
+        stats["total_presses"] = stats.get("total_presses", 0) + added_presses
+        save_stats(stats)
 
         new_world_firsts = award_world_firsts(player, name, player["presses"])
 
@@ -1002,14 +1020,14 @@ def press():
         save_leaderboard(leaderboard)
 
         daily_goal = load_daily_goal()
-        daily_goal["presses"] = daily_goal.get("presses", 0) + delta
+        daily_goal["presses"] = daily_goal.get("presses", 0) + added_presses
         save_daily_goal(daily_goal)
         _, new_global_milestones = update_global_milestone_unlocks(
             previous_total_presses,
             stats["total_presses"]
         )
         milestone_unlocks = load_global_milestone_unlocks()
-        divide_team = record_divide_press(player, milestone_unlocks, delta)
+        divide_team = record_divide_press(player, milestone_unlocks, added_presses)
         if divide_team:
             save_global_milestone_unlocks(milestone_unlocks)
         event_rewards = apply_global_event_rewards(player)

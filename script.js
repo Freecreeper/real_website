@@ -800,7 +800,7 @@ if(visitorGreeting){
     // attempt to post to server; fallback to localStorage
     postPress(delta).then(data=>{
       if(typeof data.player_presses !== 'undefined'){
-        state.presses = Number(data.player_presses || 0);
+        state.presses = Math.max(Number(state.presses || 0), Number(data.player_presses || 0));
       }
       if(data.daily_goal){
         dailyGoal = data.daily_goal;
@@ -1418,7 +1418,8 @@ if(countEl){
       headers:{'content-type':'application/json'},
       body:JSON.stringify({
         name: state.gamerTag,
-        delta: delta
+        delta: delta,
+        presses: Number(state.presses || 0)
       })
     }
   );
@@ -1446,7 +1447,7 @@ if(countEl){
       }
       const data = await res.json();
       state.gamerTag = data.name || playerName;
-      state.presses = Number(data.presses || 0);
+      state.presses = Math.max(Number(state.presses || 0), Number(data.presses || 0));
       state.eventAchievements = Array.isArray(data.event_achievements) ? data.event_achievements : state.eventAchievements;
       state.skins = state.skins || {owned:['classic'], equipped:'classic'};
       state.skins.owned = Array.isArray(state.skins.owned) ? state.skins.owned : ['classic'];
