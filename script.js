@@ -10,6 +10,7 @@
   const qsa = s => Array.from(document.querySelectorAll(s));
   const rand = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
   const RICKROLL_CHANCE = 0.00001; // 0.0010% per press
+  const STANWE_SPAM_CHANCE = 0.25;
 
   // --- DOM ---
   const btn = qs('#the-button');
@@ -534,7 +535,7 @@ if(visitorGreeting){
     const recent = state.lastClicks.filter(t=>now-t<=6000);
     if(recent.length>=10){
       state.lastClicks = [];
-      triggerPrank();
+      triggerPrank(Math.random() < STANWE_SPAM_CHANCE ? 'stanwe' : null);
     }
   }
 
