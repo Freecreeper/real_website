@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, send_from_directory, abort
 from flask_socketio import SocketIO, emit
 from difflib import SequenceMatcher
+import base64
 import json
 import os
 import random
@@ -9,13 +10,32 @@ from threading import Lock, Thread
 from datetime import datetime, timezone, timedelta
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def load_dotenv(path=os.path.join(BASE_DIR, ".env")):
+    if not os.path.exists(path):
+        return
+    with open(path, "r", encoding="utf-8") as env_file:
+        for line in env_file:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'").replace("\\n", "\n")
+            os.environ.setdefault(key, value)
+
+
+load_dotenv()
 app = Flask(__name__, static_folder=None)
 socketio = SocketIO(app, cors_allowed_origins="*")
 try:
     from pywebpush import WebPushException, webpush
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_public_key
 except ImportError:
     WebPushException = Exception
     webpush = None
+    Encoding = PublicFormat = load_pem_public_key = None
 
 STATS_FILE = os.path.join(BASE_DIR, "stats.json")
 LEADERBOARD_FILE = os.path.join(BASE_DIR, "leaderboard.json")
@@ -285,8 +305,41 @@ def dumps_json(value):
     return json.dumps(value, separators=(",", ":"))
 
 
+def base64url_decode(value):
+    compact = "".join(str(value or "").strip().split())
+    padding = "=" * ((4 - len(compact) % 4) % 4)
+    return base64.urlsafe_b64decode((compact + padding).encode("ascii"))
+
+
+def base64url_encode(value):
+    return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
+
+
+def browser_vapid_public_key(value):
+    value = str(value or "").strip()
+    if not value:
+        return ""
+
+    try:
+        raw = base64url_decode(value)
+        if len(raw) == 65 and raw[0] == 4:
+            return value.rstrip("=")
+    except Exception:
+        pass
+
+    if "BEGIN PUBLIC KEY" in value and load_pem_public_key:
+        try:
+            public_key = load_pem_public_key(value.encode("utf-8"))
+            raw = public_key.public_bytes(Encoding.X962, PublicFormat.UncompressedPoint)
+            return base64url_encode(raw)
+        except Exception:
+            return ""
+
+    return ""
+
+
 def push_enabled():
-    return bool(webpush and VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY)
+    return bool(webpush and browser_vapid_public_key(VAPID_PUBLIC_KEY) and VAPID_PRIVATE_KEY)
 
 
 def save_push_subscription(name, subscription, chaos_enabled=True):
@@ -1091,9 +1144,10 @@ def broadcast():
 
 @app.get("/api/push/config")
 def push_config():
+    public_key = browser_vapid_public_key(VAPID_PUBLIC_KEY)
     return jsonify(
-        enabled=push_enabled(),
-        public_key=VAPID_PUBLIC_KEY if push_enabled() else "",
+        enabled=bool(webpush and public_key and VAPID_PRIVATE_KEY),
+        public_key=public_key,
         subject=VAPID_SUBJECT,
     )
 

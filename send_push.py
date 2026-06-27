@@ -5,6 +5,23 @@ import sqlite3
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def load_dotenv(path=os.path.join(BASE_DIR, ".env")):
+    if not os.path.exists(path):
+        return
+    with open(path, "r", encoding="utf-8") as env_file:
+        for line in env_file:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            key = key.strip()
+            value = value.strip().strip('"').strip("'").replace("\\n", "\n")
+            os.environ.setdefault(key, value)
+
+
+load_dotenv()
 DB_FILE = os.environ.get("BUTTON_DB_PATH", os.path.join(BASE_DIR, "button.db"))
 VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
 VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", "mailto:admin@pressthebutton.click")

@@ -1427,19 +1427,26 @@ function alienContact() {
           subscription:subscription.toJSON()
         })
       });
-      if(!saveRes.ok) throw new Error('Subscription save failed');
+      if(!saveRes.ok){
+        let payload = {};
+        try{ payload = await saveRes.json(); }catch(error){}
+        throw new Error(payload.error || 'Subscription save failed');
+      }
 
-      try{
-        await apiFetch('/api/push/test', {
-          method:'POST',
-          headers:{'content-type':'application/json'},
-          body:JSON.stringify({subscription:subscription.toJSON()})
-        });
-      }catch(error){}
+      const testRes = await apiFetch('/api/push/test', {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({subscription:subscription.toJSON()})
+      });
+      if(!testRes.ok){
+        let payload = {};
+        try{ payload = await testRes.json(); }catch(error){}
+        throw new Error(payload.error || 'Test notification failed');
+      }
 
       return {ok:true, message:'Chaos Mode enabled. Watch for a test notification.'};
     }catch(error){
-      return {ok:false, message:'Could not enable notifications yet. Check server push config.'};
+      return {ok:false, message:error.message || 'Could not enable notifications yet. Check server push config.'};
     }
   }
 
