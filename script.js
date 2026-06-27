@@ -1276,14 +1276,7 @@ function alienContact() {
       return;
     }
     try{
-      const res = await apiFetch(`/api/player-lookup?q=${encodeURIComponent(typed)}`);
-      if(!res.ok){
-        let payload = {};
-        try{ payload = await res.json(); }catch(error){}
-        throw new Error(payload.error || 'lookup failed');
-      }
-      const data = await res.json();
-      const match = (data.matches || [])[0];
+      const match = await findPlayerMatch(typed);
       if(!match){
         returningCandidate = null;
         if(returningMatchCopy) returningMatchCopy.textContent = 'No close match found. Check the spelling or start as new.';
@@ -1296,8 +1289,51 @@ function alienContact() {
       }
       if(returningMatch) returningMatch.classList.remove('hidden');
     }catch(error){
-      toast(error.message === 'you cant do that' ? 'you cant do that' : 'Could not search the leaderboard right now.');
+      toast(error.message === 'you cant do that' ? 'you cant do that' : 'Could not search saved players right now.');
     }
+  }
+
+  function normalizeLookupName(name){
+    return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  }
+
+  function matchScore(query, name){
+    const a = normalizeLookupName(query);
+    const b = normalizeLookupName(name);
+    if(!a || !b) return 0;
+    if(a === b) return 1;
+    if(b.includes(a) || a.includes(b)) return 0.82;
+    const longer = a.length > b.length ? a : b;
+    const shorter = a.length > b.length ? b : a;
+    let same = 0;
+    for(let i=0;i<shorter.length;i++){
+      if(shorter[i] === longer[i]) same++;
+    }
+    return same / longer.length;
+  }
+
+  async function findPlayerMatch(typed){
+    try{
+      const res = await apiFetch(`/api/player-lookup?q=${encodeURIComponent(typed)}`);
+      if(res.ok){
+        const data = await res.json();
+        return (data.matches || [])[0] || null;
+      }
+      let payload = {};
+      try{ payload = await res.json(); }catch(error){}
+      if(res.status === 403) throw new Error(payload.error || 'you cant do that');
+    }catch(error){
+      if(error.message === 'you cant do that') throw error;
+    }
+
+    const fallback = await apiFetch('/api/leaderboard');
+    if(!fallback.ok) throw new Error('lookup failed');
+    const players = await fallback.json();
+    const matches = (Array.isArray(players) ? players : [])
+      .map(player => Object.assign({}, player, {score:matchScore(typed, player.name)}))
+      .filter(player => player.score >= 0.35)
+      .sort((a,b) => (b.score - a.score) || (Number(b.presses || 0) - Number(a.presses || 0)));
+    return matches[0] || null;
   }
 
   if(onboardNewButton) onboardNewButton.addEventListener('click', ()=>setOnboardMode('new'));
