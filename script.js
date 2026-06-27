@@ -1353,7 +1353,7 @@ function alienContact() {
     const modal = document.createElement('div');
     modal.className = 'modal chaos-modal';
     const iosCopy = isIosDevice() && !isStandaloneApp()
-      ? '<p class="chaos-ios">On iPhone, notifications only work after you add Press The Button to your Home Screen, then open it from that icon.</p>'
+      ? '<p class="chaos-ios">On iPhone, notifications only work after you add Press The Button to your Home Screen, then open it from that icon. How to: Hit the share button and then hit add to home screen then open it from there.</p>'
       : '';
     modal.innerHTML = `
       <div class="modal-card glass chaos-card">
