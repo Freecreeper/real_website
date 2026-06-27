@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Button - Settings</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#7cf2ff" />
+</head>
+
+<body class="collection-page settings-page">
+  <canvas id="particles"></canvas>
+
+  <header class="topbar">
+    <a href="index.html" class="brand">The Button</a>
+    <nav class="page-nav" aria-label="Main navigation">
+      <a href="index.html">Button</a>
+      <a href="menu.html">Menu</a>
+      <a href="settings.html" class="active" aria-current="page">Settings</a>
+      <span id="version-display"></span>
+    </nav>
+  </header>
+
+  <main class="profile-main">
+    <header class="collection-heading">
+      <div>
+        <p class="eyebrow">Control panel</p>
+        <h1>Settings</h1>
+        <p class="muted">Notifications and local device preferences.</p>
+      </div>
+    </header>
+
+    <section class="settings-grid">
+      <div class="glass settings-card">
+        <div class="settings-card-head">
+          <div>
+            <p class="eyebrow">Chaos Mode</p>
+            <h2>Notifications</h2>
+          </div>
+          <span id="push-status-pill" class="settings-pill">Checking</span>
+        </div>
+        <p id="push-summary" class="muted">Checking notification support...</p>
+        <p id="ios-push-note" class="chaos-ios hidden">
+          On iPhone, notifications only work after you add Press The Button to your Home Screen, then open it from that icon.
+        </p>
+        <div class="settings-actions">
+          <button id="enable-push" class="pill primary" type="button">Enable Notifications</button>
+          <button id="test-push" class="pill" type="button">Send Test</button>
+          <button id="disable-push" class="pill danger" type="button">Disable</button>
+        </div>
+      </div>
+
+      <div class="glass settings-card">
+        <div class="settings-card-head">
+          <div>
+            <p class="eyebrow">Player</p>
+            <h2>Local Identity</h2>
+          </div>
+        </div>
+        <div class="settings-list">
+          <div><span>Name on this device</span><strong id="settings-name">Traveler</strong></div>
+          <div><span>Local presses cached</span><strong id="settings-presses">0</strong></div>
+          <div><span>Equipped skin</span><strong id="settings-skin">Classic</strong></div>
+        </div>
+        <div class="settings-actions">
+          <button id="show-chaos-prompt" class="pill" type="button">Show Chaos Prompt Again</button>
+          <button id="reset-onboarding" class="pill danger" type="button">Forget This Device</button>
+        </div>
+      </div>
+
+      <div class="glass settings-card">
+        <div class="settings-card-head">
+          <div>
+            <p class="eyebrow">Display</p>
+            <h2>Local Toggles</h2>
+          </div>
+        </div>
+        <label class="settings-toggle">
+          <input id="reduce-effects" type="checkbox" />
+          <span>Reduce extra effects on this device</span>
+        </label>
+        <label class="settings-toggle">
+          <input id="hide-chaos-prompts" type="checkbox" />
+          <span>Do not show Chaos Mode prompt after onboarding</span>
+        </label>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span class="creator-credit">Made by Zane</span>
+  </footer>
+
+  <script src="version-egg.js"></script>
+  <script src="api-client.js"></script>
+  <script src="settings.js"></script>
+  <script src="page-effects.js"></script>
+</body>
+</html>
