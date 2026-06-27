@@ -10,7 +10,6 @@
   const qsa = s => Array.from(document.querySelectorAll(s));
   const rand = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
   const RICKROLL_CHANCE = 0.00001; // 0.0010% per press
-  const STANWE_SPAM_CHANCE = 0.03;
   const PRESENT_SKIN_CHANCE = 1 / 200;
 
   // --- DOM ---
@@ -732,14 +731,14 @@ if(visitorGreeting){
     const recent = state.lastClicks.filter(t=>now-t<=6000);
     if(recent.length>=10){
       state.lastClicks = [];
-      triggerPrank(Math.random() < STANWE_SPAM_CHANCE ? 'stanwe' : null);
+      triggerPrank();
     }
   }
 
   // --- Pranks ---
   const pranks = [
     'fakeUpdate','goose','fakeCall','alien','potato','teleport',
-    'dvd','secretReward','brokenScreen'
+    'dvd','secretReward','stanwe','brokenScreen'
   ];
   function triggerPrank(forcedChoice=null){
     state.pranks++;
