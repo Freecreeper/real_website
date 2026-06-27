@@ -306,11 +306,37 @@ body.great-divide-intro{animation:dividePagePulse 3200ms ease both}
 .menu-tile:hover{background:rgba(124,242,255,.08);border-color:rgba(124,242,255,.35);transform:translateY(-1px)}
 .menu-tile span{color:var(--accent);font-size:12px;font-weight:800;text-transform:uppercase}
 .menu-tile strong{font-size:18px;line-height:1.25;color:#fff}
-.easter-main{position:relative;z-index:1;min-height:100vh;width:min(780px,calc(100% - 32px));margin:0 auto;display:flex;align-items:center;justify-content:center;padding:104px 0 80px}
-.easter-card{text-align:center}
-.easter-card h1{margin:6px 0 14px;font-size:48px;letter-spacing:0}
+.easter-main{position:relative;z-index:1;min-height:100vh;width:min(1040px,calc(100% - 32px));margin:0 auto;padding:104px 0 80px}
+.secret-vault::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(circle at 50% 22%,rgba(124,242,255,.16),transparent 28%),radial-gradient(circle at 18% 82%,rgba(255,98,184,.12),transparent 30%),linear-gradient(180deg,#050912,#03060b 64%,#010204);pointer-events:none}
+.easter-hero{min-height:calc(100vh - 184px);display:grid;grid-template-columns:minmax(260px,.8fr) minmax(320px,1fr);align-items:center;gap:26px}
+.easter-card{text-align:left}
+.easter-card h1{margin:6px 0 14px;font-size:54px;letter-spacing:0}
 .easter-card p{font-size:17px;line-height:1.65}
-.easter-card .pill{display:inline-flex;margin-top:10px}
+.easter-card .pill{display:inline-flex}
+.secret-orbit{position:relative;min-height:380px;display:flex;align-items:center;justify-content:center}
+.secret-orbit span{position:absolute;border:1px solid rgba(124,242,255,.22);border-radius:50%;animation:secretSpin 12s linear infinite}
+.secret-orbit span:nth-child(1){width:320px;height:320px}
+.secret-orbit span:nth-child(2){width:240px;height:240px;animation-duration:8s;animation-direction:reverse;border-color:rgba(255,98,184,.22)}
+.secret-orbit span:nth-child(3){width:160px;height:160px;animation-duration:5s;border-color:rgba(255,242,116,.25)}
+.secret-orbit span::before{content:"";position:absolute;top:-4px;left:50%;width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 18px var(--accent)}
+.secret-core{position:relative;z-index:2;width:156px;height:156px;border:0;border-radius:50%;background:radial-gradient(circle at 34% 24%,#fff 0 8%,#7cf2ff 9% 22%,#6c2cff 54%,#170736 100%);color:#fff;font-weight:900;letter-spacing:1px;cursor:pointer;box-shadow:0 0 38px rgba(124,242,255,.44),0 24px 80px rgba(0,0,0,.38),inset 0 -8px 22px rgba(0,0,0,.28);-webkit-tap-highlight-color:transparent}
+.secret-core:hover{transform:translateY(-1px);box-shadow:0 0 52px rgba(124,242,255,.62),0 24px 90px rgba(0,0,0,.45),inset 0 -8px 22px rgba(0,0,0,.28)}
+@keyframes secretSpin{to{transform:rotate(360deg)}}
+.secret-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:18px 0}
+.secret-stats div{padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:rgba(255,255,255,.025)}
+.secret-stats span{display:block;color:rgba(255,255,255,.48);font-size:10px;font-weight:900;text-transform:uppercase}
+.secret-stats strong{display:block;margin-top:4px;color:#fff;font-size:21px}
+.secret-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:18px}
+.secret-panel h2{margin:4px 0 8px}
+.secret-terminal{min-height:178px;max-height:220px;overflow:auto;padding:14px;border:1px solid rgba(124,242,255,.14);border-radius:8px;background:rgba(0,0,0,.32);color:#b9fbff;font:700 13px/1.7 ui-monospace,Consolas,monospace}
+.secret-terminal div{animation:terminalLine 260ms ease both}
+@keyframes terminalLine{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.secret-badge{display:inline-flex;margin-top:10px;padding:10px 12px;border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#031018;background:var(--accent);font-weight:900;text-transform:uppercase;font-size:12px}
+.secret-badge.locked{background:rgba(255,255,255,.04);color:rgba(255,255,255,.48)}
+body.secret-awake .secret-core{animation:secretPulse 1200ms ease-in-out infinite}
+@keyframes secretPulse{50%{transform:scale(1.04);box-shadow:0 0 68px rgba(124,242,255,.76),0 24px 90px rgba(0,0,0,.45),inset 0 -8px 22px rgba(0,0,0,.28)}}
+.secret-spark{position:fixed;z-index:180;width:8px;height:8px;border-radius:50%;pointer-events:none;background:var(--accent);box-shadow:0 0 18px var(--accent);animation:secretBurst 1300ms ease-out forwards}
+@keyframes secretBurst{to{opacity:0;transform:translate(var(--tx),var(--ty)) scale(.3)}}
 .leaderboard-card{overflow:auto}
 .leaderboard-table{width:100%;border-collapse:collapse}
 .leaderboard-table th,.leaderboard-table td{padding:13px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
@@ -346,6 +372,11 @@ body.great-divide-intro{animation:dividePagePulse 3200ms ease both}
   .stat-grid,.skin-grid,.menu-grid{grid-template-columns:1fr}
   .milestone-columns{grid-template-columns:1fr}
   .divide-mvp-grid{grid-template-columns:1fr}
+  .easter-hero,.secret-grid{grid-template-columns:1fr}
+  .secret-orbit{min-height:280px}
+  .secret-orbit span:nth-child(1){width:250px;height:250px}
+  .secret-orbit span:nth-child(2){width:190px;height:190px}
+  .secret-orbit span:nth-child(3){width:130px;height:130px}
   .easter-card h1{font-size:38px}
 }
 
@@ -368,4 +399,6 @@ body.great-divide-intro{animation:dividePagePulse 3200ms ease both}
   .divide-choice-grid{grid-template-columns:1fr}
   .divide-choice{min-height:112px}
   .divide-choice-card h2{font-size:28px}
+  .secret-stats{grid-template-columns:1fr}
+  .secret-core{width:132px;height:132px}
 }

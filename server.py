@@ -159,6 +159,7 @@ PUBLIC_FILES = {
     "stats.html",
     "script.js",
     "daily.js",
+    "easter-egg.js",
     "global-milestones.js",
     "skins.js",
     "version-egg.js",

@@ -19,18 +19,47 @@
     </nav>
   </header>
 
-  <main class="easter-main">
-    <section class="glass easter-card">
-      <p class="eyebrow">Secret page found</p>
-      <h1>Thank You</h1>
-      <p>
-        Thank you so much for playing The Button. This was made and designed by Zane.
-      </p>
-      <p class="muted">
-        Every press, every weird prank, every unlocked bit of lore, and every suspiciously determined build-number tap
-        is part of the little world around this button. You found the quiet corner behind it.
-      </p>
-      <a class="pill primary" href="index.html">Back to the Button</a>
+  <main class="easter-main secret-vault">
+    <section class="easter-hero">
+      <div class="secret-orbit" aria-hidden="true">
+        <span></span><span></span><span></span>
+        <button id="secret-core" class="secret-core" type="button" aria-label="Secret button core">THE BUTTON</button>
+      </div>
+
+      <div class="glass easter-card">
+        <p class="eyebrow">Hidden signal unlocked</p>
+        <h1>The Zane Protocol</h1>
+        <p id="secret-greeting">
+          You found the room behind the room.
+        </p>
+        <div class="secret-stats" aria-label="Secret player stats">
+          <div><span>Local presses</span><strong id="secret-presses">0</strong></div>
+          <div><span>Skins found</span><strong id="secret-skins">0</strong></div>
+          <div><span>Lore records</span><strong id="secret-lore">0</strong></div>
+        </div>
+        <p class="muted">
+          This page was made and designed by Zane as a thank-you to everyone who kept pressing when pressing made no sense.
+        </p>
+        <div class="controls">
+          <button id="activate-secret" class="pill primary" type="button">Activate Signal</button>
+          <a class="pill" href="index.html">Back to the Button</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="secret-grid">
+      <div class="glass secret-panel">
+        <p class="eyebrow">System log</p>
+        <div id="secret-terminal" class="secret-terminal" aria-live="polite"></div>
+      </div>
+      <div class="glass secret-panel">
+        <p class="eyebrow">Credits</p>
+        <h2>Made For The Button People</h2>
+        <p class="muted">
+          Every streak, prank, badge, team choice, and suspicious build-number tap helped shape this weird little world.
+        </p>
+        <div id="secret-badge" class="secret-badge locked">Signal locked</div>
+      </div>
     </section>
   </main>
 
@@ -39,6 +68,7 @@
   </footer>
 
   <script src="version-egg.js"></script>
+  <script src="easter-egg.js"></script>
   <script src="page-effects.js"></script>
 </body>
 </html>
