@@ -172,7 +172,6 @@ PUBLIC_FILES = {
     "style.css",
     "version.json",
     "images/goose.png",
-    "images/broken.png",
 }
 
 

@@ -7,9 +7,29 @@
     'It once convinced a lighthouse to change careers.',
     'Do not let the Button near a blender.',
     'The Button hums softly at 3:14am.',
-    'A once-famous poet wrote an ode to the Button in invisible ink.'
+    'A once-famous poet wrote an ode to the Button in invisible ink.',
+    'The Button once hid inside a vending machine and refused to dispense anything but suspense.',
+    'A forgotten kingdom measured time by how often The Button felt dramatic.',
+    'The Button has a tiny legal team dedicated to arguing with elevators.',
+    'The Button once replaced a weather report with the word maybe.',
+    'The Button keeps a scrapbook of every almost-press.',
+    'A moon crater is shaped suspiciously like The Button.',
+    'The Button passed a background check performed by a lamp.',
+    'The Button invented a holiday and forgot to tell anyone.',
+    'Three philosophers tried to define The Button and immediately needed snacks.',
+    'The Button owns a map with no countries, only vibes.',
+    'A secret tunnel under The Button leads to another smaller button.',
+    'The Button refuses to explain why it knows Morse code.',
+    'The Button once made a microwave feel underqualified.',
+    'The Button has been described as round by several reliable witnesses.',
+    'The Button stores thunder in a very small envelope.',
+    'The Button once challenged gravity and negotiated a draw.',
+    'A museum tried to display The Button, but the display case got nervous.',
+    'The Button has a favorite cloud and will not say which one.',
+    'The Button can smell fresh patch notes from two rooms away.',
+    'The Button once convinced a calendar to add Thursday 2.'
   ];
-  const lore = Array.from({length:120}, (_, index) =>
+  const lore = Array.from({length:220}, (_, index) =>
     `${baseLore[index % baseLore.length]} (Lore entry #${index + 1})`
   );
 

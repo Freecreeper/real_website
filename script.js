@@ -78,11 +78,20 @@
   let returningCandidate = null;
   
   // --- Data ---
-  const messages = [
+  const baseMessages = [
     'please dont.', 'Interesting choice.','You could be doing homework.','The button appreciates your loyalty.','Your click has been recorded for scientific purposes.','Productivity levels unchanged.','The Department of Button Affairs has been notified.','Your FBI agent is taking notes.','That felt nice, didn\'t it?','A brief moment of joy was added to the universe.','You are now 0.001% closer to a secret.'
   ];
+  const messageSubjects = ['button', 'counter', 'finger', 'timeline', 'server', 'leaderboard', 'secret room', 'daily streak', 'cosmic office', 'press committee'];
+  const messageVerbs = ['blinked', 'approved this', 'filed a report', 'made a tiny noise', 'updated the prophecy', 'looked nervous', 'added one sparkle', 'opened a drawer', 'checked the vibes', 'pretended this was normal'];
+  const messageExtras = ['No one knows why.', 'This is probably fine.', 'The audit continues.', 'Zane has been notified.', 'That counted emotionally.', 'A badge somewhere coughed.', 'Please remain seated.', 'The lore thickens.', 'The button remembers.', 'Science refuses to comment.'];
+  const messages = baseMessages.concat(Array.from({length:300}, (_, index) => {
+    const subject = messageSubjects[index % messageSubjects.length];
+    const verb = messageVerbs[Math.floor(index / messageSubjects.length) % messageVerbs.length];
+    const extra = messageExtras[Math.floor(index / (messageSubjects.length * messageVerbs.length)) % messageExtras.length];
+    return `Message ${index + 1}: the ${subject} ${verb}. ${extra}`;
+  }));
 
-  // generate 100+ lore entries
+  // generate 220 lore entries
   const lore = (function(){
     const base = [
       'The Button was discovered after the Great Cheese Incident of 1987.',
@@ -103,10 +112,30 @@
       'The Button is secretly a superhero.',
       'The Button is also a time traveler.',
       'The Button has a pet goldfish named "Bubbles".',
-      'The button likes artists like GRAHAM and Noah Kahan.'
+      'The button likes artists like GRAHAM and Noah Kahan.',
+      'The Button once hid inside a vending machine and refused to dispense anything but suspense.',
+      'A forgotten kingdom measured time by how often The Button felt dramatic.',
+      'The Button has a tiny legal team dedicated to arguing with elevators.',
+      'The Button once replaced a weather report with the word maybe.',
+      'The Button keeps a scrapbook of every almost-press.',
+      'A moon crater is shaped suspiciously like The Button.',
+      'The Button passed a background check performed by a lamp.',
+      'The Button invented a holiday and forgot to tell anyone.',
+      'Three philosophers tried to define The Button and immediately needed snacks.',
+      'The Button owns a map with no countries, only vibes.',
+      'A secret tunnel under The Button leads to another smaller button.',
+      'The Button refuses to explain why it knows Morse code.',
+      'The Button once made a microwave feel underqualified.',
+      'The Button has been described as round by several reliable witnesses.',
+      'The Button stores thunder in a very small envelope.',
+      'The Button once challenged gravity and negotiated a draw.',
+      'A museum tried to display The Button, but the display case got nervous.',
+      'The Button has a favorite cloud and will not say which one.',
+      'The Button can smell fresh patch notes from two rooms away.',
+      'The Button once convinced a calendar to add Thursday 2.'
     ];
     const out = [];
-    for(let i=0;i<120;i++){
+    for(let i=0;i<220;i++){
       out.push(base[i%base.length] + ' (Lore entry #' + (i+1) + ')');
     }
     return out;
@@ -747,7 +776,7 @@ if(visitorGreeting){
   // --- Pranks ---
   const pranks = [
     'fakeUpdate','goose','fakeCall','alien','potato','teleport',
-    'dvd','secretReward','stanwe','brokenScreen'
+    'dvd','secretReward','stanwe'
   ];
   function triggerPrank(forcedChoice=null){
     state.pranks++;
@@ -836,7 +865,6 @@ if(visitorGreeting){
       case 'secretReward': prankSecretReward(); break;
       case 'stanwe': prankStanwe(); break;
       case 'rickroll': prankRickroll(); break;
-      case 'brokenScreen': prankBrokenScreen(); break;
       default: toast('Something strange happened.');
     }
   }
@@ -1033,46 +1061,6 @@ function alienContact() {
     modal.remove();
   }, 6000);
 }
-
-  function prankBrokenScreen() {
-  // Prevent multiple overlays
-  if (document.getElementById('broken-screen-overlay')) return;
-
-  const overlay = document.createElement('div');
-  overlay.id = 'broken-screen-overlay';
-
-  overlay.style.position = 'fixed';
-  overlay.style.top = '0';
-  overlay.style.left = '0';
-  overlay.style.width = '100vw';
-  overlay.style.height = '100vh';
-  overlay.style.zIndex = '999999';
-  overlay.style.pointerEvents = 'none';
-  overlay.style.background ="url('images/broken.png') center/cover no-repeat";
-  overlay.style.opacity = '0';
-
-  document.body.appendChild(overlay);
-
-  // Little flash for extra panic 😈
-  document.body.style.transition = 'filter 100ms';
-  document.body.style.filter = 'brightness(1.3)';
-
-  setTimeout(() => {
-    document.body.style.filter = '';
-    overlay.style.transition = 'opacity 150ms';
-    overlay.style.opacity = '1';
-  }, 100);
-
-  // Remove after 6 seconds
-  setTimeout(() => {
-    overlay.style.opacity = '0';
-
-    setTimeout(() => {
-      overlay.remove();
-    }, 200);
-  }, 6000);
-}
-
   // --- Button press handler ---
   let lastPointerPress = 0;
   function handleButtonPress(event){
