@@ -19,7 +19,7 @@
       event:'A meteor crashes into the button.',
       status:'locked',
       active_hours:48,
-      effects:['Countdown near impact', 'Whole page shake', 'Dust everywhere', 'Permanent crack on the button'],
+      effects:['Countdown near impact', 'Whole page shake', 'Dust everywhere', 'Meteor glow during the event'],
       rewards:['Meteor Badge for everyone online', 'Meteor Button skin drop chance for 48 hours']
     },
     {

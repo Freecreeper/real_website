@@ -6,6 +6,7 @@
     {id:'meteor', name:'Meteor', unlock:'Drops during Meteor Impact', requirement:state => (state.skins?.owned || []).includes('meteor')},
     {id:'red-champion', name:'Red Champion', unlock:'Win a Great Divide season with Team Red', requirement:state => (state.skins?.owned || []).includes('red-champion')},
     {id:'blue-champion', name:'Blue Champion', unlock:'Win a Great Divide season with Team Blue', requirement:state => (state.skins?.owned || []).includes('blue-champion')},
+    {id:'present', name:'Special Present', unlock:'Extremely rare Secret Reward drop', requirement:state => (state.skins?.owned || []).includes('present')},
     {id:'sunrise', name:'Sunrise', unlock:'Press 25 times', requirement:state => Number(state.presses || 0) >= 25},
     {id:'matrix', name:'Matrix', unlock:'Press 100 times', requirement:state => Number(state.presses || 0) >= 100},
     {id:'royal', name:'Royal', unlock:'Reach a 3 day streak', requirement:state => Number((state.daily || {}).streak || 0) >= 3},

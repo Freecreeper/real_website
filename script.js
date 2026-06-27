@@ -10,7 +10,8 @@
   const qsa = s => Array.from(document.querySelectorAll(s));
   const rand = (min,max) => Math.floor(Math.random()*(max-min+1))+min;
   const RICKROLL_CHANCE = 0.00001; // 0.0010% per press
-  const STANWE_SPAM_CHANCE = 0.25;
+  const STANWE_SPAM_CHANCE = 0.03;
+  const PRESENT_SKIN_CHANCE = 1 / 200;
 
   // --- DOM ---
   const btn = qs('#the-button');
@@ -118,6 +119,7 @@
     {id:'meteor', name:'Meteor', unlock:'Drops during Meteor Impact', requirement:()=>state.skins.owned.includes('meteor')},
     {id:'red-champion', name:'Red Champion', unlock:'Win a Great Divide season with Team Red', requirement:()=>state.skins.owned.includes('red-champion')},
     {id:'blue-champion', name:'Blue Champion', unlock:'Win a Great Divide season with Team Blue', requirement:()=>state.skins.owned.includes('blue-champion')},
+    {id:'present', name:'Special Present', unlock:'Extremely rare Secret Reward drop', requirement:()=>state.skins.owned.includes('present')},
     {id:'sunrise', name:'Sunrise', unlock:'Press 25 times', requirement:()=>state.presses >= 25},
     {id:'matrix', name:'Matrix', unlock:'Press 100 times', requirement:()=>state.presses >= 100},
     {id:'royal', name:'Royal', unlock:'Reach a 3 day streak', requirement:()=>getDaily().streak >= 3},
@@ -238,7 +240,8 @@
           moon:'Moon Button',
           meteor:'Meteor Button',
           'red-champion':'Red Champion Button',
-          'blue-champion':'Blue Champion Button'
+          'blue-champion':'Blue Champion Button',
+          present:'Special Present Button'
         };
         const skinName = skinNames[skin] || skin;
         toast(`Rare skin dropped: ${skinName}`, {time:7000});
@@ -510,6 +513,7 @@
       if(!res.ok) throw new Error(data.error || 'team choice failed');
       divideState = normalizeDivideState(data);
       state.divideTeam = divideState.player.team;
+      if(data.reward_skin) applyEventRewards({skins:[data.reward_skin]});
       save();
       applyGreatDivideEvent({status:'active'}, divideState, false);
       toast(`Team ${divideTeamName(state.divideTeam)} locked in. Every press now counts for your side.`, {time:6000});
@@ -735,7 +739,7 @@ if(visitorGreeting){
   // --- Pranks ---
   const pranks = [
     'fakeUpdate','goose','fakeCall','alien','potato','teleport',
-    'dvd','secretReward','stanwe','brokenScreen'
+    'dvd','secretReward','brokenScreen'
   ];
   function triggerPrank(forcedChoice=null){
     state.pranks++;
@@ -941,7 +945,27 @@ function alienContact() {
     const card = document.createElement('div'); card.className='modal-card glass';
     card.innerHTML=`<h3>🎁 Secret Reward Unlocked</h3><p class='muted'>Click to claim.</p><div style='display:flex;justify-content:center'><button id='claim' class='pill primary'>Claim Reward</button></div>`;
     modal.appendChild(card); document.body.appendChild(modal);
-    card.querySelector('#claim').onclick = ()=>{ card.querySelector('p').textContent='Processing...'; setTimeout(()=>{card.querySelector('p').textContent='Congratulations. You won absolutely nothing.'; card.querySelector('#claim').remove(); setTimeout(()=>modal.remove(),2200);},1600); };
+    card.querySelector('#claim').onclick = ()=>{
+      const message = card.querySelector('p');
+      const claim = card.querySelector('#claim');
+      message.textContent='Processing...';
+      setTimeout(()=>{
+        if(Math.random() < PRESENT_SKIN_CHANCE && !state.skins.owned.includes('present')){
+          state.skins.owned.push('present');
+          save();
+          render();
+          message.textContent='Wait. You actually won the Special Present skin.';
+          claim.remove();
+          toast('Rare skin dropped: Special Present Button', {time:7000});
+          setTimeout(()=>showSkinDropPopup('present', 'Special Present Button'), 500);
+          setTimeout(()=>modal.remove(),3200);
+          return;
+        }
+        message.textContent='Congratulations. You won absolutely nothing.';
+        claim.remove();
+        setTimeout(()=>modal.remove(),2200);
+      },1600);
+    };
   }
 
   function prankStanwe(){

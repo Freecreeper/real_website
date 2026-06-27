@@ -63,7 +63,7 @@ GLOBAL_MILESTONE_DEFS = [
         "title": "Meteor Impact",
         "event": "A meteor crashes into the button.",
         "active_hours": 48,
-        "effects": ["Countdown near impact", "Whole page shake", "Dust everywhere", "Event crack on the button"],
+        "effects": ["Countdown near impact", "Whole page shake", "Dust everywhere", "Meteor glow during the event"],
         "rewards": ["Meteor Badge for everyone online", "Meteor Button skin drop chance for 48 hours"],
     },
     {
@@ -575,9 +575,15 @@ def choose_divide_team(name, team):
     player["divide_team"] = team
     player["divide_season"] = unlocks["divide"].get("season", 1)
     player["divide_presses"] = int(player.get("divide_presses", 0) or 0)
+    player.setdefault("skins", [])
+    reward_skin = DIVIDE_TEAMS[team]["skin"]
+    if reward_skin not in player["skins"]:
+        player["skins"].append(reward_skin)
     save_leaderboard(leaderboard)
     save_global_milestone_unlocks(unlocks)
-    return divide_state_payload(name, leaderboard, unlocks), None
+    payload = divide_state_payload(name, leaderboard, unlocks)
+    payload["reward_skin"] = reward_skin
+    return payload, None
 
 
 def record_divide_press(player, unlocks, delta):

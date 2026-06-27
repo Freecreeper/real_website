@@ -69,6 +69,7 @@ body.nightfall-intro::after{
 .giant.skin-meteor{background:radial-gradient(circle at 35% 25%,#ffefc7 0 10%,#ff8b3d 24%,#8f2e14 56%,#2a120c 100%);color:#fff4dc;text-shadow:0 2px 10px rgba(0,0,0,.55)}
 .giant.skin-red-champion{background:radial-gradient(circle at 34% 26%,#fff2e8 0 8%,#ff756c 18%,#c51f35 54%,#3a0712 100%);color:#fff7f2;text-shadow:0 2px 10px rgba(0,0,0,.55)}
 .giant.skin-blue-champion{background:radial-gradient(circle at 34% 26%,#f1fbff 0 8%,#6ec8ff 20%,#245aff 56%,#061848 100%);color:#f4fbff;text-shadow:0 2px 10px rgba(0,0,0,.55)}
+.giant.skin-present{background:radial-gradient(circle at 35% 22%,#fff 0 8%,#ffe7f7 9% 18%,#ff62b8 19% 42%,#6c2cff 78%,#190632 100%);color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.55)}
 .giant.skin-sunrise{background:linear-gradient(180deg,#ffd166,#ef476f);color:#241106}
 .giant.skin-matrix{background:linear-gradient(180deg,#00e6a8,#0b6e4f);color:#02140e}
 .giant.skin-royal{background:linear-gradient(180deg,#d7b8ff,#6d44ff);color:#12071f}
@@ -144,7 +145,6 @@ body.meteor-impact-intro .dust-a{animation:meteorDust 1500ms ease-out 1450ms for
 body.meteor-impact-intro .dust-b{animation:meteorDust 1700ms ease-out 1500ms forwards;transform:translate(-90px,20px)}
 body.meteor-impact-intro .dust-c{animation:meteorDust 1900ms ease-out 1550ms forwards;transform:translate(90px,30px)}
 body.meteor-active .giant{position:relative;overflow:hidden}
-body.meteor-active .giant::after,.giant.skin-meteor::after{content:"";position:absolute;inset:22%;background:linear-gradient(116deg,transparent 0 45%,rgba(15,8,4,.72) 46% 49%,transparent 50%),linear-gradient(62deg,transparent 0 54%,rgba(15,8,4,.55) 55% 58%,transparent 59%),linear-gradient(150deg,transparent 0 44%,rgba(255,230,186,.38) 45% 46%,transparent 47%);pointer-events:none}
 body.meteor-countdown .giant{box-shadow:0 0 30px rgba(255,123,46,.45),0 20px 60px rgba(255,80,32,.18),inset 0 -6px 18px rgba(0,0,0,.18)}
 @keyframes meteorFall{0%{transform:translate(0,0) rotate(0deg)}72%{transform:translate(-58vw,54vh) rotate(-340deg)}100%{transform:translate(-58vw,54vh) scale(.08);opacity:0}}
 @keyframes meteorDust{0%{opacity:0;transform:translate(0,0) scale(.3)}30%{opacity:.78}100%{opacity:0;transform:translate(-120px,-30px) scale(8)}}
