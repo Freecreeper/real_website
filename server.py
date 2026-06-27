@@ -23,6 +23,10 @@ storage_lock = Lock()
 STANDARD_ACHIEVEMENT_MILESTONES = (10, 25, 50, 100, 500, 1000)
 WORLD_FIRST_INTERVAL = 5000
 DAILY_GOAL_TARGET = 1000
+KNOWN_WORLD_FIRST_CLAIMS = {
+    5000: "Tuh Mator",
+    10000: "Ezra",
+}
 STAT_DEFAULTS = {
     "total_presses": 0,
     "total_visitors": 0,
@@ -517,6 +521,7 @@ def repair_total_presses(stats):
 
 def load_world_firsts():
     init_db()
+    ensure_known_world_firsts()
     with db_connect() as conn:
         rows = conn.execute(
             "SELECT milestone, name, claimed_at FROM world_firsts"
@@ -547,6 +552,35 @@ def save_world_firsts(data):
                     claim.get("claimed_at") or datetime.now(timezone.utc).isoformat(),
                 ),
             )
+
+
+def ensure_known_world_firsts():
+    now = datetime.now(timezone.utc).isoformat()
+    with db_connect() as conn:
+        for milestone, name in KNOWN_WORLD_FIRST_CLAIMS.items():
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO world_firsts(milestone, name, claimed_at)
+                VALUES (?, ?, ?)
+                """,
+                (int(milestone), name, now),
+            )
+            row = conn.execute(
+                "SELECT exclusive_achievements FROM players WHERE name = ?",
+                (name,),
+            ).fetchone()
+            if row:
+                achievements = parse_json_list(row["exclusive_achievements"])
+                if milestone not in achievements:
+                    achievements.append(milestone)
+                    conn.execute(
+                        """
+                        UPDATE players
+                        SET exclusive_achievements = ?, achievements = achievements + 1, updated_at = ?
+                        WHERE name = ?
+                        """,
+                        (dumps_json(achievements), now, name),
+                    )
 
 
 def today_key():
@@ -885,6 +919,32 @@ def achievement_count(presses, exclusive_achievements):
     return standard_count + len(exclusive_achievements)
 
 
+def award_world_firsts(player, name, current_presses):
+    world_firsts = load_world_firsts()
+    new_world_firsts = []
+    player.setdefault("exclusive_achievements", [])
+
+    # If claims were missing after migration or old JSON storage, do not let already
+    # eligible players skip empty world-first slots forever.
+    for milestone in range(WORLD_FIRST_INTERVAL, current_presses + 1, WORLD_FIRST_INTERVAL):
+        milestone_key = str(milestone)
+        if milestone_key in world_firsts:
+            continue
+
+        claim = {
+            "milestone": milestone,
+            "name": name,
+            "claimed_at": datetime.now(timezone.utc).isoformat()
+        }
+        world_firsts[milestone_key] = claim
+        if milestone not in player["exclusive_achievements"]:
+            player["exclusive_achievements"].append(milestone)
+        new_world_firsts.append(claim)
+
+    save_world_firsts(world_firsts)
+    return new_world_firsts
+
+
 # -----------------------
 # Live Updates
 # -----------------------
@@ -934,27 +994,12 @@ def press():
         previous_presses = int(player.get("presses", 0))
         player["presses"] = previous_presses + delta
 
-        world_firsts = load_world_firsts()
-        first_milestone = ((previous_presses // WORLD_FIRST_INTERVAL) + 1) * WORLD_FIRST_INTERVAL
-        for milestone in range(first_milestone, player["presses"] + 1, WORLD_FIRST_INTERVAL):
-            milestone_key = str(milestone)
-            if milestone_key in world_firsts:
-                continue
-
-            claim = {
-                "milestone": milestone,
-                "name": name,
-                "claimed_at": datetime.now(timezone.utc).isoformat()
-            }
-            world_firsts[milestone_key] = claim
-            player["exclusive_achievements"].append(milestone)
-            new_world_firsts.append(claim)
+        new_world_firsts = award_world_firsts(player, name, player["presses"])
 
         player["achievements"] = achievement_count(
             player["presses"],
             player["exclusive_achievements"]
         )
-        save_world_firsts(world_firsts)
         save_leaderboard(leaderboard)
 
         daily_goal = load_daily_goal()

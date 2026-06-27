@@ -179,9 +179,13 @@
 
   loadServerAchievements(gamerTag)
     .then(data => {
+      state.presses = Number(data.presses || state.presses || 0);
       mergeServerRewards(state, data);
+      renderStandard(state);
       renderEventAchievements(state);
       renderWorldFirsts(data, gamerTag);
+      document.getElementById('achievement-summary').textContent =
+        `${gamerTag}, you have ${Number(state.presses || 0).toLocaleString()} server presses.`;
     })
     .catch(() => {
       renderWorldFirsts({world_firsts:[], next_world_first_milestone:5000}, gamerTag, false);
