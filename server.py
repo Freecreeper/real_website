@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory, abort
 from flask_socketio import SocketIO, emit
+from difflib import SequenceMatcher
 import json
 import os
 import random
@@ -16,6 +17,7 @@ LEADERBOARD_FILE = os.path.join(BASE_DIR, "leaderboard.json")
 WORLD_FIRSTS_FILE = os.path.join(BASE_DIR, "world_firsts.json")
 DAILY_GOAL_FILE = os.path.join(BASE_DIR, "daily_goal.json")
 GLOBAL_MILESTONES_FILE = os.path.join(BASE_DIR, "global_milestones.json")
+BLOCKED_NAMES_FILE = os.path.join(BASE_DIR, "blocked_names.txt")
 DB_FILE = os.environ.get("BUTTON_DB_PATH", os.path.join(BASE_DIR, "button.db"))
 storage_lock = Lock()
 STANDARD_ACHIEVEMENT_MILESTONES = (10, 25, 50, 100, 500, 1000)
@@ -30,6 +32,23 @@ STAT_DEFAULTS = {
     "alien_contacts": 0,
     "rickroll_victims": 0,
     "achievement_unlocks": 0,
+}
+DEFAULT_BLOCKED_NAME_TERMS = {
+    "admin",
+    "moderator",
+    "owner",
+    "staff",
+    "fuck",
+    "shit",
+    "bitch",
+    "asshole",
+    "nigger",
+    "nigga",
+    "faggot",
+    "retard",
+    "kys",
+    "hitler",
+    "nazi",
 }
 MOON_SKIN_DROP_CHANCE = 0.05
 METEOR_SKIN_DROP_CHANCE = 0.05
@@ -211,6 +230,13 @@ def init_db():
                 id TEXT PRIMARY KEY,
                 data TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS banned_players (
+                normalized_name TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                reason TEXT NOT NULL DEFAULT '',
+                banned_at TEXT NOT NULL
+            );
         """)
         for key, value in STAT_DEFAULTS.items():
             conn.execute(
@@ -232,6 +258,139 @@ def parse_json_list(value, default=None):
 
 def dumps_json(value):
     return json.dumps(value, separators=(",", ":"))
+
+
+def normalize_player_name(name):
+    return " ".join(str(name or "").strip().lower().split())
+
+
+def compact_name_for_filter(name):
+    table = str.maketrans({
+        "0": "o",
+        "1": "i",
+        "3": "e",
+        "4": "a",
+        "5": "s",
+        "7": "t",
+        "@": "a",
+        "$": "s",
+        "!": "i",
+    })
+    return "".join(
+        ch for ch in normalize_player_name(name).translate(table)
+        if ch.isalnum()
+    )
+
+
+def load_blocked_name_terms():
+    terms = set(DEFAULT_BLOCKED_NAME_TERMS)
+    extra = os.environ.get("BUTTON_BLOCKED_NAME_TERMS", "")
+    for term in extra.split(","):
+        term = term.strip()
+        if term:
+            terms.add(term)
+
+    if os.path.exists(BLOCKED_NAMES_FILE):
+        try:
+            with open(BLOCKED_NAMES_FILE, "r", encoding="utf-8") as f:
+                for line in f:
+                    term = line.strip()
+                    if term and not term.startswith("#"):
+                        terms.add(term)
+        except OSError:
+            pass
+
+    return {compact_name_for_filter(term) for term in terms if compact_name_for_filter(term)}
+
+
+def has_blocked_name_term(name):
+    compact = compact_name_for_filter(name)
+    if not compact:
+        return False
+    return any(term in compact for term in load_blocked_name_terms())
+
+
+def clean_player_name(name):
+    return str(name or "Anonymous").strip()[:32] or "Anonymous"
+
+
+def is_banned_name(name):
+    normalized = normalize_player_name(name)
+    if not normalized:
+        return False
+    init_db()
+    with db_connect() as conn:
+        row = conn.execute(
+            "SELECT 1 FROM banned_players WHERE normalized_name = ?",
+            (normalized,),
+        ).fetchone()
+    return row is not None
+
+
+def is_rejected_name(name):
+    return is_banned_name(name) or has_blocked_name_term(name)
+
+
+def ban_player_name(name, reason=""):
+    name = clean_player_name(name)
+    init_db()
+    with db_connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO banned_players(normalized_name, name, reason, banned_at)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT(normalized_name) DO UPDATE SET
+                name = excluded.name,
+                reason = excluded.reason,
+                banned_at = excluded.banned_at
+            """,
+            (
+                normalize_player_name(name),
+                name,
+                str(reason or "")[:160],
+                datetime.now(timezone.utc).isoformat(),
+            ),
+        )
+    return name
+
+
+def unban_player_name(name):
+    normalized = normalize_player_name(name)
+    init_db()
+    with db_connect() as conn:
+        cur = conn.execute(
+            "DELETE FROM banned_players WHERE normalized_name = ?",
+            (normalized,),
+        )
+    return cur.rowcount > 0
+
+
+def player_lookup_matches(query, limit=5):
+    query = clean_player_name(query)
+    normalized_query = normalize_player_name(query)
+    if not normalized_query:
+        return []
+
+    leaderboard = public_leaderboard()
+    matches = []
+    for name, player in leaderboard.items():
+        normalized_name = normalize_player_name(name)
+        score = SequenceMatcher(None, normalized_query, normalized_name).ratio()
+        if normalized_query in normalized_name or normalized_name in normalized_query:
+            score = max(score, 0.82)
+        if normalized_query == normalized_name:
+            score = 1.0
+        if score < 0.35:
+            continue
+        matches.append({
+            "name": name,
+            "presses": int(player.get("presses", 0) or 0),
+            "score": round(score, 3),
+            "exact": normalized_query == normalized_name,
+        })
+
+    matches.sort(key=lambda item: (item["score"], item["presses"]), reverse=True)
+    return matches[:limit]
 
 
 def load_stats():
@@ -291,6 +450,15 @@ def load_leaderboard():
     return leaderboard
 
 
+def public_leaderboard(data=None):
+    data = data if data is not None else load_leaderboard()
+    return {
+        name: player
+        for name, player in data.items()
+        if not is_rejected_name(name)
+    }
+
+
 def save_leaderboard(data):
     init_db()
     with db_connect() as conn:
@@ -327,7 +495,7 @@ def save_leaderboard(data):
 
 
 def leaderboard_press_total():
-    leaderboard = load_leaderboard()
+    leaderboard = public_leaderboard()
     total = 0
     for player in leaderboard.values():
         try:
@@ -474,6 +642,13 @@ def divide_is_active(unlocks=None):
 def divide_player_payload(name, leaderboard=None, unlocks=None):
     leaderboard = leaderboard if leaderboard is not None else load_leaderboard()
     unlocks = unlocks if unlocks is not None else load_global_milestone_unlocks()
+    if is_rejected_name(name):
+        return {
+            "name": "",
+            "team": None,
+            "presses": 0,
+            "title": "",
+        }
     player = leaderboard.get(name, {})
     team = player.get("divide_team")
     if team not in DIVIDE_TEAMS:
@@ -505,7 +680,7 @@ def divide_state_payload(name=None, leaderboard=None, unlocks=None):
             "mvp_title": meta["title"],
         }
 
-    leaderboard = leaderboard if leaderboard is not None else load_leaderboard()
+    leaderboard = public_leaderboard(leaderboard if leaderboard is not None else load_leaderboard())
     mvps = {}
     for team in DIVIDE_TEAMS:
         contenders = [
@@ -725,9 +900,11 @@ def broadcast():
 def press():
     payload = request.json or {}
     delta = payload.get("delta", 1)
-    name = str(payload.get("name", "Anonymous")).strip()[:32] or "Anonymous"
+    name = clean_player_name(payload.get("name", "Anonymous"))
     if not isinstance(delta, int) or isinstance(delta, bool) or not 1 <= delta <= 100:
         return jsonify(error="delta must be an integer from 1 to 100"), 400
+    if is_rejected_name(name):
+        return jsonify(error="you cant do that"), 403
 
     new_world_firsts = []
     new_global_milestones = []
@@ -896,7 +1073,7 @@ def global_milestones():
 
 @app.get("/api/divide")
 def divide_state():
-    name = str(request.args.get("name", "")).strip()[:32]
+    name = clean_player_name(request.args.get("name", "")).strip()
     with storage_lock:
         payload = divide_state_payload(name or None)
     return jsonify(payload)
@@ -905,8 +1082,10 @@ def divide_state():
 @app.post("/api/divide/choose")
 def divide_choose():
     payload = request.json or {}
-    name = str(payload.get("name", "Anonymous")).strip()[:32] or "Anonymous"
+    name = clean_player_name(payload.get("name", "Anonymous"))
     team = str(payload.get("team", "")).strip().lower()
+    if is_rejected_name(name):
+        return jsonify(error="you cant do that"), 403
     with storage_lock:
         result, error = choose_divide_team(name, team)
 
@@ -916,6 +1095,44 @@ def divide_choose():
     return jsonify(result)
 
 
+@app.get("/api/player-lookup")
+def player_lookup():
+    query = request.args.get("q", "")
+    if has_blocked_name_term(query):
+        return jsonify(error="you cant do that"), 403
+    matches = player_lookup_matches(query)
+    return jsonify(matches=matches)
+
+
+@app.post("/api/admin/ban")
+def admin_ban():
+    token = os.environ.get("BUTTON_ADMIN_TOKEN", "")
+    supplied = request.headers.get("X-Admin-Token") or (request.json or {}).get("token", "")
+    if not token or supplied != token:
+        return jsonify(error="admin token required"), 403
+
+    payload = request.json or {}
+    name = clean_player_name(payload.get("name", ""))
+    reason = str(payload.get("reason", "")).strip()
+    if not name:
+        return jsonify(error="name required"), 400
+    return jsonify(ok=True, name=ban_player_name(name, reason))
+
+
+@app.post("/api/admin/unban")
+def admin_unban():
+    token = os.environ.get("BUTTON_ADMIN_TOKEN", "")
+    supplied = request.headers.get("X-Admin-Token") or (request.json or {}).get("token", "")
+    if not token or supplied != token:
+        return jsonify(error="admin token required"), 403
+
+    payload = request.json or {}
+    name = clean_player_name(payload.get("name", ""))
+    if not name:
+        return jsonify(error="name required"), 400
+    return jsonify(ok=True, removed=unban_player_name(name))
+
+
 # -----------------------
 # Leaderboard Endpoint
 # -----------------------
@@ -923,7 +1140,7 @@ def divide_choose():
 @app.get("/api/leaderboard")
 def leaderboard():
 
-    data = load_leaderboard()
+    data = public_leaderboard()
     divide = divide_state_payload(leaderboard=data)
     mvp_titles = {}
     for team, mvp in divide.get("mvps", {}).items():
@@ -953,7 +1170,9 @@ def leaderboard():
 
 @app.get("/api/achievements")
 def achievements():
-    name = str(request.args.get("name", "Anonymous")).strip()[:32] or "Anonymous"
+    name = clean_player_name(request.args.get("name", "Anonymous"))
+    if is_rejected_name(name):
+        return jsonify(error="you cant do that"), 403
     with storage_lock:
         leaderboard_data = load_leaderboard()
         world_firsts = load_world_firsts()

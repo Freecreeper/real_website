@@ -23,6 +23,13 @@
   const gamerTagInput = qs('#gamer-tag');
   const humorToggle = qs('#humor-toggle');
   const acceptOnboard = qs('#accept-onboard');
+  const onboardHelp = qs('#onboard-help');
+  const onboardNewButton = qs('#onboard-new');
+  const onboardReturningButton = qs('#onboard-returning');
+  const returningMatch = qs('#returning-match');
+  const returningMatchCopy = qs('#returning-match-copy');
+  const returningConfirm = qs('#returning-confirm');
+  const returningRetry = qs('#returning-retry');
   const gamerTagDisplay = qs('#gamer-tag-display');
   const visitorGreeting = qs('#visitor-greeting');
   const sidePanel = qs('#side-panel');
@@ -67,6 +74,8 @@
   let meteorUnlocked = false;
   let divideState = {active:false, teams:{red:{presses:0}, blue:{presses:0}}, leader:'tie', player:{team:null, presses:0}};
   let divideChoiceModal = null;
+  let onboardMode = 'new';
+  let returningCandidate = null;
   
   // --- Data ---
   const messages = [
@@ -761,6 +770,9 @@ if(visitorGreeting){
   function updateGlobalPresses(delta=1){
     // attempt to post to server; fallback to localStorage
     postPress(delta).then(data=>{
+      if(typeof data.player_presses !== 'undefined'){
+        state.presses = Number(data.player_presses || 0);
+      }
       if(data.daily_goal){
         dailyGoal = data.daily_goal;
         saveDailyGoalFallback(dailyGoal);
@@ -787,7 +799,15 @@ if(visitorGreeting){
       applyEventRewards(data.event_rewards);
       if(data.divide) applyGreatDivideEvent({status:data.divide.active ? 'active' : 'locked'}, data.divide, false);
       save();
-    }).catch(()=>{
+      render();
+    }).catch((error)=>{
+      if(error && error.status === 403){
+        state.presses = Math.max(0, Number(state.presses || 0) - delta);
+        save();
+        render();
+        toast(error.message || 'This name is banned.', {time:6000});
+        return;
+      }
       const k='thebutton:global';
       try{
         const g = JSON.parse(localStorage.getItem(k)) || {visitors:1,presses:0,goose:0,potato:0,pranks:0};
@@ -1208,6 +1228,97 @@ function alienContact() {
     }
   };
 
+  function setOnboardMode(mode){
+    onboardMode = mode === 'returning' ? 'returning' : 'new';
+    returningCandidate = null;
+    if(returningMatch) returningMatch.classList.add('hidden');
+    if(onboardNewButton) onboardNewButton.classList.toggle('primary', onboardMode === 'new');
+    if(onboardReturningButton) onboardReturningButton.classList.toggle('primary', onboardMode === 'returning');
+    if(gamerTagInput){
+      gamerTagInput.placeholder = onboardMode === 'returning' ? 'Type your old name' : 'Pick a Gamer Tag';
+      gamerTagInput.focus();
+    }
+    if(onboardHelp){
+      onboardHelp.textContent = onboardMode === 'returning'
+        ? 'Type your name and I will find the closest leaderboard match.'
+        : 'Pick a name for the leaderboard.';
+    }
+    if(acceptOnboard) acceptOnboard.textContent = onboardMode === 'returning' ? 'Find My Name' : 'Accept';
+  }
+
+  function enableChaosModeIfNeeded(){
+    if(state.humor && 'Notification' in window){
+      if(Notification.permission === 'default'){
+        Notification.requestPermission().then(p=>{ if(p==='granted'){ toast('Notifications enabled - occasional surprises may follow.'); new Notification('Department of Button Affairs', {body:'Thank you. Occasional notices may appear.'}); scheduleSampleNotification(); } else { toast('Notifications denied. Humor mode continues silently.'); } });
+      } else if(Notification.permission === 'granted'){
+        toast('Notifications already enabled.'); new Notification('Department of Button Affairs', {body:'You will receive rare, funny notifications.'}); scheduleSampleNotification();
+      } else {
+        toast('Notifications denied previously. You can enable them in browser settings.');
+      }
+    }
+  }
+
+  async function completeOnboarding(tag){
+    state.gamerTag = tag.trim() || 'Traveler';
+    state.humor = humorToggle.checked;
+    onboard.style.display='none';
+    save();
+    render();
+    await syncPlayerFromServer(state.gamerTag);
+    fetchGlobalMilestones();
+    enableChaosModeIfNeeded();
+  }
+
+  async function findReturningPlayer(){
+    const typed = gamerTagInput.value.trim();
+    if(!typed){
+      toast('Type your old name first.');
+      return;
+    }
+    try{
+      const res = await apiFetch(`/api/player-lookup?q=${encodeURIComponent(typed)}`);
+      if(!res.ok){
+        let payload = {};
+        try{ payload = await res.json(); }catch(error){}
+        throw new Error(payload.error || 'lookup failed');
+      }
+      const data = await res.json();
+      const match = (data.matches || [])[0];
+      if(!match){
+        returningCandidate = null;
+        if(returningMatchCopy) returningMatchCopy.textContent = 'No close match found. Check the spelling or start as new.';
+        if(returningMatch) returningMatch.classList.remove('hidden');
+        return;
+      }
+      returningCandidate = match;
+      if(returningMatchCopy){
+        returningMatchCopy.textContent = `Closest match: ${match.name} with ${Number(match.presses || 0).toLocaleString()} presses. Is this you?`;
+      }
+      if(returningMatch) returningMatch.classList.remove('hidden');
+    }catch(error){
+      toast(error.message === 'you cant do that' ? 'you cant do that' : 'Could not search the leaderboard right now.');
+    }
+  }
+
+  if(onboardNewButton) onboardNewButton.addEventListener('click', ()=>setOnboardMode('new'));
+  if(onboardReturningButton) onboardReturningButton.addEventListener('click', ()=>setOnboardMode('returning'));
+  if(returningRetry) returningRetry.addEventListener('click', ()=>{
+    returningCandidate = null;
+    if(returningMatch) returningMatch.classList.add('hidden');
+    if(gamerTagInput) gamerTagInput.focus();
+  });
+  if(returningConfirm) returningConfirm.addEventListener('click', ()=>{
+    if(returningCandidate) completeOnboarding(returningCandidate.name);
+  });
+  if(acceptOnboard) acceptOnboard.onclick = ()=>{
+    if(onboardMode === 'returning'){
+      findReturningPlayer();
+      return;
+    }
+    completeOnboarding(gamerTagInput.value.trim() || 'Traveler');
+  };
+  setOnboardMode('new');
+
   function scheduleSampleNotification(){
     // schedule one rare in-page notification after a short delay to showcase capability
     setTimeout(()=>{
@@ -1289,10 +1400,43 @@ if(countEl){
   );
 
   if(!res.ok){
-    throw new Error("Press update failed");
+    let payload = {};
+    try{ payload = await res.json(); }catch(error){}
+    const error = new Error(payload.error || "Press update failed");
+    error.status = res.status;
+    throw error;
   }
   return res.json();
 }
+
+  async function syncPlayerFromServer(name=state.gamerTag){
+    const playerName = (name || '').trim();
+    if(!playerName || playerName === 'Traveler') return null;
+    try{
+      const res = await apiFetch(`/api/achievements?name=${encodeURIComponent(playerName)}`);
+      if(!res.ok){
+        let payload = {};
+        try{ payload = await res.json(); }catch(error){}
+        if(res.status === 403) toast(payload.error || 'you cant do that');
+        return null;
+      }
+      const data = await res.json();
+      state.gamerTag = data.name || playerName;
+      state.presses = Number(data.presses || 0);
+      state.eventAchievements = Array.isArray(data.event_achievements) ? data.event_achievements : state.eventAchievements;
+      state.skins = state.skins || {owned:['classic'], equipped:'classic'};
+      state.skins.owned = Array.isArray(state.skins.owned) ? state.skins.owned : ['classic'];
+      for(const skin of data.skins || []){
+        if(!state.skins.owned.includes(skin)) state.skins.owned.push(skin);
+      }
+      if(data.divide?.player?.team) state.divideTeam = data.divide.player.team;
+      save();
+      render();
+      return data;
+    }catch(error){
+      return null;
+    }
+  }
 
   async function fetchDailyGoal(){
     try{
@@ -1400,6 +1544,7 @@ if(countEl){
   }
 
   // start periodic refresh
+  if(state.gamerTag && state.gamerTag !== 'Traveler') syncPlayerFromServer(state.gamerTag);
   fetchGlobalStats(); globalRefreshTimer = setInterval(fetchGlobalStats, 30000);
   fetchGlobalMilestones(); setInterval(fetchGlobalMilestones, 60000);
   fetchDailyGoal(); setInterval(fetchDailyGoal, 30000);

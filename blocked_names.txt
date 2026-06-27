@@ -1,0 +1,3 @@
+# One blocked name term per line.
+# The server also has a small built-in default list.
+# Add more terms here on EC2, then restart Flask.

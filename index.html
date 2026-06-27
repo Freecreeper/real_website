@@ -57,7 +57,22 @@
     <div class="modal-card glass">
       <h2>Welcome</h2>
 
+      <div class="onboard-choice" role="group" aria-label="Player type">
+        <button id="onboard-new" class="pill primary" type="button" data-onboard-mode="new">New</button>
+        <button id="onboard-returning" class="pill" type="button" data-onboard-mode="returning">Returning</button>
+      </div>
+
+      <p id="onboard-help" class="muted">Pick a name for the leaderboard.</p>
+
       <input id="gamer-tag" placeholder="Gamer Tag" maxlength="32" />
+
+      <div id="returning-match" class="returning-match hidden">
+        <p id="returning-match-copy" class="muted"></p>
+        <div class="modal-actions">
+          <button id="returning-retry" class="pill" type="button">Try Again</button>
+          <button id="returning-confirm" class="pill primary" type="button">Yes, that's me</button>
+        </div>
+      </div>
 
       <label>
         <input id="humor-toggle" type="checkbox" />

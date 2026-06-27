@@ -70,6 +70,13 @@ def init_db():
                 id TEXT PRIMARY KEY,
                 data TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS banned_players (
+                normalized_name TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                reason TEXT NOT NULL DEFAULT '',
+                banned_at TEXT NOT NULL
+            );
         """)
         for key, value in STAT_DEFAULTS.items():
             conn.execute(
@@ -184,6 +191,7 @@ def clear_db():
         conn.execute("DELETE FROM world_firsts")
         conn.execute("DELETE FROM daily_goals")
         conn.execute("DELETE FROM global_milestones")
+        conn.execute("DELETE FROM banned_players")
 
 
 def migrate(force=False):
