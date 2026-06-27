@@ -5,12 +5,17 @@ import json
 import os
 import random
 import sqlite3
-from threading import Lock
+from threading import Lock, Thread
 from datetime import datetime, timezone, timedelta
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__, static_folder=None)
 socketio = SocketIO(app, cors_allowed_origins="*")
+try:
+    from pywebpush import WebPushException, webpush
+except ImportError:
+    WebPushException = Exception
+    webpush = None
 
 STATS_FILE = os.path.join(BASE_DIR, "stats.json")
 LEADERBOARD_FILE = os.path.join(BASE_DIR, "leaderboard.json")
@@ -19,6 +24,9 @@ DAILY_GOAL_FILE = os.path.join(BASE_DIR, "daily_goal.json")
 GLOBAL_MILESTONES_FILE = os.path.join(BASE_DIR, "global_milestones.json")
 BLOCKED_NAMES_FILE = os.path.join(BASE_DIR, "blocked_names.txt")
 DB_FILE = os.environ.get("BUTTON_DB_PATH", os.path.join(BASE_DIR, "button.db"))
+VAPID_PUBLIC_KEY = os.environ.get("VAPID_PUBLIC_KEY", "")
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", "mailto:admin@pressthebutton.click")
 storage_lock = Lock()
 STANDARD_ACHIEVEMENT_MILESTONES = (10, 25, 50, 100, 500, 1000)
 WORLD_FIRST_INTERVAL = 5000
@@ -169,6 +177,10 @@ PUBLIC_FILES = {
     "version-egg.js",
     "page-effects.js",
     "api-client.js",
+    "manifest.json",
+    "sw.js",
+    "icon-192.svg",
+    "icon-512.svg",
     "style.css",
     "version.json",
     "images/goose.png",
@@ -241,6 +253,15 @@ def init_db():
                 reason TEXT NOT NULL DEFAULT '',
                 banned_at TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS push_subscriptions (
+                endpoint TEXT PRIMARY KEY,
+                name TEXT NOT NULL DEFAULT '',
+                subscription TEXT NOT NULL,
+                chaos_enabled INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
         """)
         for key, value in STAT_DEFAULTS.items():
             conn.execute(
@@ -262,6 +283,106 @@ def parse_json_list(value, default=None):
 
 def dumps_json(value):
     return json.dumps(value, separators=(",", ":"))
+
+
+def push_enabled():
+    return bool(webpush and VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY)
+
+
+def save_push_subscription(name, subscription, chaos_enabled=True):
+    endpoint = subscription.get("endpoint") if isinstance(subscription, dict) else ""
+    keys = subscription.get("keys") if isinstance(subscription, dict) else None
+    if not endpoint or not isinstance(keys, dict) or not keys.get("p256dh") or not keys.get("auth"):
+        return False
+
+    now = datetime.now(timezone.utc).isoformat()
+    init_db()
+    with db_connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO push_subscriptions(endpoint, name, subscription, chaos_enabled, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(endpoint) DO UPDATE SET
+                name = excluded.name,
+                subscription = excluded.subscription,
+                chaos_enabled = excluded.chaos_enabled,
+                updated_at = excluded.updated_at
+            """,
+            (
+                endpoint,
+                clean_player_name(name),
+                dumps_json(subscription),
+                1 if chaos_enabled else 0,
+                now,
+                now,
+            ),
+        )
+    return True
+
+
+def delete_push_subscription(endpoint):
+    init_db()
+    with db_connect() as conn:
+        conn.execute("DELETE FROM push_subscriptions WHERE endpoint = ?", (endpoint,))
+
+
+def send_push_notification(subscription, title, body, url="/", tag="the-button-chaos"):
+    if not push_enabled():
+        return False, "push is not configured"
+    payload = dumps_json({
+        "title": title,
+        "body": body,
+        "url": url,
+        "tag": tag,
+        "icon": "/icon-192.svg",
+        "badge": "/icon-192.svg",
+    })
+    try:
+        webpush(
+            subscription_info=subscription,
+            data=payload,
+            vapid_private_key=VAPID_PRIVATE_KEY,
+            vapid_claims={"sub": VAPID_SUBJECT},
+        )
+        return True, None
+    except WebPushException as error:
+        return False, str(error)
+
+
+def send_push_to_all(title, body, url="/", tag="the-button-chaos"):
+    init_db()
+    with db_connect() as conn:
+        rows = conn.execute(
+            "SELECT endpoint, subscription FROM push_subscriptions WHERE chaos_enabled = 1"
+        ).fetchall()
+
+    sent = 0
+    failed = 0
+    for row in rows:
+        try:
+            subscription = json.loads(row["subscription"])
+        except (TypeError, json.JSONDecodeError):
+            delete_push_subscription(row["endpoint"])
+            failed += 1
+            continue
+        ok, error = send_push_notification(subscription, title, body, url, tag)
+        if ok:
+            sent += 1
+        else:
+            failed += 1
+            if error and ("410" in error or "404" in error):
+                delete_push_subscription(row["endpoint"])
+    return {"sent": sent, "failed": failed}
+
+
+def send_push_to_all_async(title, body, url="/", tag="the-button-chaos"):
+    if not push_enabled():
+        return
+    Thread(
+        target=send_push_to_all,
+        args=(title, body, url, tag),
+        daemon=True,
+    ).start()
 
 
 def normalize_player_name(name):
@@ -968,6 +1089,71 @@ def broadcast():
 # API
 # -----------------------
 
+@app.get("/api/push/config")
+def push_config():
+    return jsonify(
+        enabled=push_enabled(),
+        public_key=VAPID_PUBLIC_KEY if push_enabled() else "",
+        subject=VAPID_SUBJECT,
+    )
+
+
+@app.post("/api/push/subscribe")
+def push_subscribe():
+    payload = request.json or {}
+    name = clean_player_name(payload.get("name", "Anonymous"))
+    if is_rejected_name(name):
+        return jsonify(error="you cant do that"), 403
+    subscription = payload.get("subscription")
+    if not push_enabled():
+        return jsonify(error="push is not configured"), 503
+    if not save_push_subscription(name, subscription, bool(payload.get("chaos_enabled", True))):
+        return jsonify(error="invalid push subscription"), 400
+    return jsonify(ok=True)
+
+
+@app.post("/api/push/unsubscribe")
+def push_unsubscribe():
+    payload = request.json or {}
+    endpoint = str(payload.get("endpoint", "")).strip()
+    if endpoint:
+        delete_push_subscription(endpoint)
+    return jsonify(ok=True)
+
+
+@app.post("/api/push/test")
+def push_test():
+    payload = request.json or {}
+    subscription = payload.get("subscription")
+    if not isinstance(subscription, dict):
+        return jsonify(error="subscription required"), 400
+    ok, error = send_push_notification(
+        subscription,
+        "Chaos Mode is awake",
+        "The Button can now bother you even when the tab is closed.",
+        "/index.html",
+        "the-button-test",
+    )
+    if not ok:
+        return jsonify(error=error or "push failed"), 500
+    return jsonify(ok=True)
+
+
+@app.post("/api/admin/push")
+def admin_push():
+    token = os.environ.get("BUTTON_ADMIN_TOKEN", "")
+    supplied = request.headers.get("X-Admin-Token") or (request.json or {}).get("token", "")
+    if not token or supplied != token:
+        return jsonify(error="admin token required"), 403
+
+    payload = request.json or {}
+    title = str(payload.get("title", "The Button")).strip()[:80] or "The Button"
+    body = str(payload.get("body", "Something happened.")).strip()[:220] or "Something happened."
+    url = str(payload.get("url", "/index.html")).strip() or "/index.html"
+    result = send_push_to_all(title, body, url, str(payload.get("tag", "the-button-admin")))
+    return jsonify(ok=True, **result)
+
+
 @app.post("/api/press")
 def press():
     payload = request.json or {}
@@ -1039,6 +1225,13 @@ def press():
         divide_state = divide_state_payload(name, leaderboard, milestone_unlocks)
 
     broadcast()
+    for milestone in new_global_milestones:
+        send_push_to_all_async(
+            "Global milestone unlocked",
+            f"{milestone['title']} is live on The Button.",
+            "/global-milestones.html",
+            f"milestone-{milestone['id']}",
+        )
 
     return jsonify(
         ok=True,

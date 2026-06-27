@@ -120,6 +120,9 @@ body.panel-open .panel{display:flex;animation:slideIn 260ms ease;}
 .onboard-choice{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .returning-match{padding:12px;border:1px solid rgba(124,242,255,.16);border-radius:8px;background:rgba(124,242,255,.06)}
 .returning-match p{margin:0}
+.chaos-card h2{margin:0;font-size:28px;letter-spacing:0}
+.chaos-ios{margin:0;padding:12px;border:1px solid rgba(255,209,102,.22);border-radius:8px;background:rgba(255,209,102,.08);color:#ffe8a8;line-height:1.45}
+#chaos-status{min-height:20px;font-size:13px}
 .field{display:flex;flex-direction:column;gap:6px}
 .field input[type="text"], .field input[type="email"], .field input[type="password"], .field input{padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:var(--muted)}
 .label{font-weight:700}

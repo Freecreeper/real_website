@@ -77,6 +77,15 @@ def init_db():
                 reason TEXT NOT NULL DEFAULT '',
                 banned_at TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS push_subscriptions (
+                endpoint TEXT PRIMARY KEY,
+                name TEXT NOT NULL DEFAULT '',
+                subscription TEXT NOT NULL,
+                chaos_enabled INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
         """)
         for key, value in STAT_DEFAULTS.items():
             conn.execute(
@@ -192,6 +201,7 @@ def clear_db():
         conn.execute("DELETE FROM daily_goals")
         conn.execute("DELETE FROM global_milestones")
         conn.execute("DELETE FROM banned_players")
+        conn.execute("DELETE FROM push_subscriptions")
 
 
 def migrate(force=False):

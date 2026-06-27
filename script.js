@@ -76,6 +76,7 @@
   let divideChoiceModal = null;
   let onboardMode = 'new';
   let returningCandidate = null;
+  let chaosPromptShown = false;
   
   // --- Data ---
   const baseMessages = [
@@ -1248,13 +1249,12 @@ function alienContact() {
 
   async function completeOnboarding(tag){
     state.gamerTag = tag.trim() || 'Traveler';
-    state.humor = humorToggle.checked;
     onboard.style.display='none';
     save();
     render();
     await syncPlayerFromServer(state.gamerTag);
     fetchGlobalMilestones();
-    enableChaosModeIfNeeded();
+    showChaosModePrompt();
   }
 
   async function findReturningPlayer(){
@@ -1322,6 +1322,125 @@ function alienContact() {
       .filter(player => player.score >= 0.35)
       .sort((a,b) => (b.score - a.score) || (Number(b.presses || 0) - Number(a.presses || 0)));
     return matches[0] || null;
+  }
+
+  function isIosDevice(){
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  }
+
+  function isStandaloneApp(){
+    return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+  }
+
+  function urlBase64ToUint8Array(base64String){
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for(let i=0;i<rawData.length;i++) outputArray[i] = rawData.charCodeAt(i);
+    return outputArray;
+  }
+
+  function pushSupported(){
+    return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  }
+
+  function showChaosModePrompt(){
+    if(chaosPromptShown || localStorage.getItem('thebutton:chaos-prompt-seen') === '1') return;
+    chaosPromptShown = true;
+    localStorage.setItem('thebutton:chaos-prompt-seen', '1');
+
+    const modal = document.createElement('div');
+    modal.className = 'modal chaos-modal';
+    const iosCopy = isIosDevice() && !isStandaloneApp()
+      ? '<p class="chaos-ios">On iPhone, notifications only work after you add Press The Button to your Home Screen, then open it from that icon.</p>'
+      : '';
+    modal.innerHTML = `
+      <div class="modal-card glass chaos-card">
+        <p class="eyebrow">Optional</p>
+        <h2>Chaos Mode Notifications</h2>
+        <p class="muted">Let The Button send rare alerts for streaks, global events, and suspicious button activity even when this tab is closed.</p>
+        ${iosCopy}
+        <div id="chaos-status" class="muted"></div>
+        <div class="modal-actions">
+          <button id="chaos-skip" class="pill" type="button">Not Now</button>
+          <button id="chaos-enable" class="pill primary" type="button">Enable Chaos Mode</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('#chaos-skip').addEventListener('click', () => modal.remove());
+    modal.querySelector('#chaos-enable').addEventListener('click', async () => {
+      const status = modal.querySelector('#chaos-status');
+      const button = modal.querySelector('#chaos-enable');
+      button.disabled = true;
+      status.textContent = 'Setting up notifications...';
+      const result = await enablePushChaosMode();
+      status.textContent = result.message;
+      button.disabled = false;
+      if(result.ok){
+        state.humor = true;
+        save();
+        setTimeout(()=>modal.remove(), 1800);
+      }
+    });
+  }
+
+  async function enablePushChaosMode(){
+    if(!pushSupported()){
+      return {ok:false, message:'This browser does not support Web Push notifications.'};
+    }
+    if(isIosDevice() && !isStandaloneApp()){
+      return {ok:false, message:'On iPhone, add this site to your Home Screen first, then open it from there to enable notifications.'};
+    }
+    if(!window.isSecureContext){
+      return {ok:false, message:'Notifications require HTTPS. Use https://pressthebutton.click.'};
+    }
+
+    try{
+      const configRes = await apiFetch('/api/push/config');
+      if(!configRes.ok) throw new Error('Push config unavailable');
+      const config = await configRes.json();
+      if(!config.enabled || !config.public_key){
+        return {ok:false, message:'Push is not configured on the server yet.'};
+      }
+
+      const permission = await Notification.requestPermission();
+      if(permission !== 'granted'){
+        return {ok:false, message:'Notifications were not allowed.'};
+      }
+
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      const existing = await registration.pushManager.getSubscription();
+      if(existing) await existing.unsubscribe();
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:urlBase64ToUint8Array(config.public_key)
+      });
+
+      const saveRes = await apiFetch('/api/push/subscribe', {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({
+          name:state.gamerTag || 'Traveler',
+          chaos_enabled:true,
+          subscription:subscription.toJSON()
+        })
+      });
+      if(!saveRes.ok) throw new Error('Subscription save failed');
+
+      try{
+        await apiFetch('/api/push/test', {
+          method:'POST',
+          headers:{'content-type':'application/json'},
+          body:JSON.stringify({subscription:subscription.toJSON()})
+        });
+      }catch(error){}
+
+      return {ok:true, message:'Chaos Mode enabled. Watch for a test notification.'};
+    }catch(error){
+      return {ok:false, message:'Could not enable notifications yet. Check server push config.'};
+    }
   }
 
   if(onboardNewButton) onboardNewButton.addEventListener('click', ()=>setOnboardMode('new'));
