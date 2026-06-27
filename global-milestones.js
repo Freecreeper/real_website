@@ -92,6 +92,31 @@
     if(milestone.status === 'unlocked') return 'Unlocked';
     return 'Locked';
   }
+  function renderDividePanel(divide){
+    if(!divide || !divide.teams) return '';
+    const red = Number(divide.teams.red?.presses || 0);
+    const blue = Number(divide.teams.blue?.presses || 0);
+    const total = red + blue;
+    const redPct = total ? Math.round(red / total * 100) : 50;
+    const leader = divide.leader === 'tie' ? 'Tied' : `${divide.teams[divide.leader]?.name || divide.leader} leads`;
+    const redMvp = divide.mvps?.red ? `${divide.mvps.red.name} (${formatNumber(divide.mvps.red.presses)})` : 'No Red MVP yet';
+    const blueMvp = divide.mvps?.blue ? `${divide.mvps.blue.name} (${formatNumber(divide.mvps.blue.presses)})` : 'No Blue MVP yet';
+    return `
+      <div class="divide-milestone-panel">
+        <div class="divide-score-head">
+          <span>Live Season</span>
+          <strong>${leader}</strong>
+        </div>
+        <div class="divide-score-row red"><span>Red</span><strong>${formatNumber(red)}</strong></div>
+        <div class="divide-score-row blue"><span>Blue</span><strong>${formatNumber(blue)}</strong></div>
+        <div class="divide-score-track"><span style="width:${redPct}%"></span></div>
+        <div class="divide-mvp-grid">
+          <p><span>Red MVP</span><strong>${redMvp}</strong></p>
+          <p><span>Blue MVP</span><strong>${blueMvp}</strong></p>
+        </div>
+      </div>
+    `;
+  }
   function renderMilestone(milestone, totalPresses){
     const article = document.createElement('article');
     article.className = `milestone-card ${milestone.status || 'locked'}`;
@@ -120,6 +145,7 @@
           <ul>${milestone.rewards.map(reward => `<li>${reward}</li>`).join('')}</ul>
         </div>
       </div>
+      ${milestone.id === 'divide' ? renderDividePanel(milestone.divide) : ''}
     `;
     return article;
   }

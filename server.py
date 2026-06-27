@@ -3,6 +3,7 @@ from flask_socketio import SocketIO, emit
 import json
 import os
 import random
+import sqlite3
 from threading import Lock
 from datetime import datetime, timezone, timedelta
 
@@ -15,12 +16,35 @@ LEADERBOARD_FILE = os.path.join(BASE_DIR, "leaderboard.json")
 WORLD_FIRSTS_FILE = os.path.join(BASE_DIR, "world_firsts.json")
 DAILY_GOAL_FILE = os.path.join(BASE_DIR, "daily_goal.json")
 GLOBAL_MILESTONES_FILE = os.path.join(BASE_DIR, "global_milestones.json")
+DB_FILE = os.environ.get("BUTTON_DB_PATH", os.path.join(BASE_DIR, "button.db"))
 storage_lock = Lock()
 STANDARD_ACHIEVEMENT_MILESTONES = (10, 25, 50, 100, 500, 1000)
 WORLD_FIRST_INTERVAL = 5000
 DAILY_GOAL_TARGET = 1000
+STAT_DEFAULTS = {
+    "total_presses": 0,
+    "total_visitors": 0,
+    "gooses_released": 0,
+    "potatoes_detected": 0,
+    "pranks_triggered": 0,
+    "alien_contacts": 0,
+    "rickroll_victims": 0,
+    "achievement_unlocks": 0,
+}
 MOON_SKIN_DROP_CHANCE = 0.05
 METEOR_SKIN_DROP_CHANCE = 0.05
+DIVIDE_TEAMS = {
+    "red": {
+        "name": "Red",
+        "skin": "red-champion",
+        "title": "Red Vanguard",
+    },
+    "blue": {
+        "name": "Blue",
+        "skin": "blue-champion",
+        "title": "Blue Vanguard",
+    },
+}
 GLOBAL_MILESTONE_DEFS = [
     {
         "id": "first-era",
@@ -39,7 +63,7 @@ GLOBAL_MILESTONE_DEFS = [
         "title": "Meteor Impact",
         "event": "A meteor crashes into the button.",
         "active_hours": 48,
-        "effects": ["Countdown near impact", "Whole page shake", "Dust everywhere", "Permanent crack on the button"],
+        "effects": ["Countdown near impact", "Whole page shake", "Dust everywhere", "Event crack on the button"],
         "rewards": ["Meteor Badge for everyone online", "Meteor Button skin drop chance for 48 hours"],
     },
     {
@@ -49,8 +73,8 @@ GLOBAL_MILESTONE_DEFS = [
         "title": "The Great Divide",
         "event": "Choose Red or Blue for the season.",
         "active_hours": None,
-        "effects": ["The screen splits", "Every press helps your team", "Season-long team choice"],
-        "rewards": ["Winning team gets an exclusive champion skin", "MVPs get a special title"],
+        "effects": ["The screen splits", "Every press helps your team", "Season-long team choice", "Live Red vs Blue scoreboard"],
+        "rewards": ["Winning team gets an exclusive champion skin when the season closes", "Top Red and Blue players become MVPs"],
     },
     {
         "id": "alien",
@@ -141,47 +165,98 @@ def add_cache_headers(response):
 # -----------------------
 # Stats Storage
 # -----------------------
-def load_stats():
-    if not os.path.exists(STATS_FILE):
-        return {
-            "total_presses": 0,
-            "total_visitors": 0,
-            "gooses_released": 0,
-            "potatoes_detected": 0,
-            "pranks_triggered": 0,
-            "alien_contacts": 0,
-            "rickroll_victims": 0,
-            "achievement_unlocks": 0
-        }
+def db_connect():
+    conn = sqlite3.connect(DB_FILE, timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA busy_timeout = 5000")
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
 
+
+def init_db():
+    with db_connect() as conn:
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS global_stats (
+                key TEXT PRIMARY KEY,
+                value INTEGER NOT NULL DEFAULT 0
+            );
+
+            CREATE TABLE IF NOT EXISTS players (
+                name TEXT PRIMARY KEY,
+                presses INTEGER NOT NULL DEFAULT 0,
+                achievements INTEGER NOT NULL DEFAULT 0,
+                exclusive_achievements TEXT NOT NULL DEFAULT '[]',
+                event_achievements TEXT NOT NULL DEFAULT '[]',
+                skins TEXT NOT NULL DEFAULT '["classic"]',
+                divide_team TEXT,
+                divide_season INTEGER,
+                divide_presses INTEGER NOT NULL DEFAULT 0,
+                title TEXT NOT NULL DEFAULT '',
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS world_firsts (
+                milestone INTEGER PRIMARY KEY,
+                name TEXT NOT NULL,
+                claimed_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS daily_goals (
+                date TEXT PRIMARY KEY,
+                presses INTEGER NOT NULL DEFAULT 0,
+                target INTEGER NOT NULL DEFAULT 1000
+            );
+
+            CREATE TABLE IF NOT EXISTS global_milestones (
+                id TEXT PRIMARY KEY,
+                data TEXT NOT NULL
+            );
+        """)
+        for key, value in STAT_DEFAULTS.items():
+            conn.execute(
+                "INSERT OR IGNORE INTO global_stats(key, value) VALUES (?, ?)",
+                (key, int(value)),
+            )
+
+
+def parse_json_list(value, default=None):
+    default = [] if default is None else default
+    if isinstance(value, list):
+        return value
     try:
-        with open(STATS_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except (OSError, json.JSONDecodeError):
-        data = {}
-
-    # normalize old saves (important or your file stays broken forever)
-    return {
-        "total_presses": data.get("presses", data.get("total_presses", 0)),
-        "total_visitors": data.get("visitors", data.get("total_visitors", 0)),
-        "gooses_released": data.get("goose", data.get("gooses_released", 0)),
-        "potatoes_detected": data.get("potato", data.get("potatoes_detected", 0)),
-        "pranks_triggered": data.get("pranks", data.get("pranks_triggered", 0)),
-        "alien_contacts": data.get("alien_contacts", 0),
-        "rickroll_victims": data.get("rickroll_victims", 0),
-        "achievement_unlocks": data.get("achievement_unlocks", 0),
-    }
+        parsed = json.loads(value or "[]")
+    except (TypeError, json.JSONDecodeError):
+        return list(default)
+    return parsed if isinstance(parsed, list) else list(default)
 
 
-def save_json_atomic(path, data):
-    tmp_path = f"{path}.tmp"
-    with open(tmp_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2)
-    os.replace(tmp_path, path)
+def dumps_json(value):
+    return json.dumps(value, separators=(",", ":"))
+
+
+def load_stats():
+    init_db()
+    data = dict(STAT_DEFAULTS)
+    with db_connect() as conn:
+        rows = conn.execute("SELECT key, value FROM global_stats").fetchall()
+    for row in rows:
+        data[row["key"]] = int(row["value"] or 0)
+    return data
 
 
 def save_stats(data):
-    save_json_atomic(STATS_FILE, data)
+    init_db()
+    with db_connect() as conn:
+        for key, default in STAT_DEFAULTS.items():
+            value = int(data.get(key, default) or 0)
+            conn.execute(
+                """
+                INSERT INTO global_stats(key, value)
+                VALUES (?, ?)
+                ON CONFLICT(key) DO UPDATE SET value = excluded.value
+                """,
+                (key, value),
+            )
 
 
 # -----------------------
@@ -189,18 +264,66 @@ def save_stats(data):
 # -----------------------
 
 def load_leaderboard():
-    if not os.path.exists(LEADERBOARD_FILE):
-        return {}
+    init_db()
+    with db_connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT name, presses, achievements, exclusive_achievements,
+                   event_achievements, skins, divide_team, divide_season,
+                   divide_presses, title
+            FROM players
+            """
+        ).fetchall()
 
-    try:
-        with open(LEADERBOARD_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (OSError, json.JSONDecodeError):
-        return {}
+    leaderboard = {}
+    for row in rows:
+        leaderboard[row["name"]] = {
+            "presses": int(row["presses"] or 0),
+            "achievements": int(row["achievements"] or 0),
+            "exclusive_achievements": parse_json_list(row["exclusive_achievements"]),
+            "event_achievements": parse_json_list(row["event_achievements"]),
+            "skins": parse_json_list(row["skins"], ["classic"]),
+            "divide_team": row["divide_team"],
+            "divide_season": row["divide_season"],
+            "divide_presses": int(row["divide_presses"] or 0),
+            "title": row["title"] or "",
+        }
+    return leaderboard
 
 
 def save_leaderboard(data):
-    save_json_atomic(LEADERBOARD_FILE, data)
+    init_db()
+    with db_connect() as conn:
+        conn.execute("DELETE FROM players")
+        for name, player in data.items():
+            skins = player.get("skins", ["classic"])
+            if not isinstance(skins, list):
+                skins = ["classic"]
+            if "classic" not in skins:
+                skins.insert(0, "classic")
+            conn.execute(
+                """
+                INSERT INTO players(
+                    name, presses, achievements, exclusive_achievements,
+                    event_achievements, skins, divide_team, divide_season,
+                    divide_presses, title, updated_at
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    str(name)[:32] or "Anonymous",
+                    int(player.get("presses", 0) or 0),
+                    int(player.get("achievements", 0) or 0),
+                    dumps_json(player.get("exclusive_achievements", [])),
+                    dumps_json(player.get("event_achievements", [])),
+                    dumps_json(skins),
+                    player.get("divide_team"),
+                    player.get("divide_season"),
+                    int(player.get("divide_presses", 0) or 0),
+                    player.get("title", "") or "",
+                    datetime.now(timezone.utc).isoformat(),
+                ),
+            )
 
 
 def leaderboard_press_total():
@@ -224,18 +347,37 @@ def repair_total_presses(stats):
 
 
 def load_world_firsts():
-    if not os.path.exists(WORLD_FIRSTS_FILE):
-        return {}
-
-    try:
-        with open(WORLD_FIRSTS_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (OSError, json.JSONDecodeError):
-        return {}
+    init_db()
+    with db_connect() as conn:
+        rows = conn.execute(
+            "SELECT milestone, name, claimed_at FROM world_firsts"
+        ).fetchall()
+    return {
+        str(row["milestone"]): {
+            "milestone": int(row["milestone"]),
+            "name": row["name"],
+            "claimed_at": row["claimed_at"],
+        }
+        for row in rows
+    }
 
 
 def save_world_firsts(data):
-    save_json_atomic(WORLD_FIRSTS_FILE, data)
+    init_db()
+    with db_connect() as conn:
+        conn.execute("DELETE FROM world_firsts")
+        for claim in data.values():
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO world_firsts(milestone, name, claimed_at)
+                VALUES (?, ?, ?)
+                """,
+                (
+                    int(claim.get("milestone", 0) or 0),
+                    str(claim.get("name", "Anonymous")).strip()[:32] or "Anonymous",
+                    claim.get("claimed_at") or datetime.now(timezone.utc).isoformat(),
+                ),
+            )
 
 
 def today_key():
@@ -244,42 +386,212 @@ def today_key():
 
 def load_daily_goal():
     today = today_key()
-    if not os.path.exists(DAILY_GOAL_FILE):
+    init_db()
+    with db_connect() as conn:
+        row = conn.execute(
+            "SELECT date, presses, target FROM daily_goals WHERE date = ?",
+            (today,),
+        ).fetchone()
+    if not row:
         return {"date": today, "presses": 0, "target": DAILY_GOAL_TARGET}
-
-    try:
-        with open(DAILY_GOAL_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-    except (OSError, json.JSONDecodeError):
-        data = {}
-
-    if data.get("date") != today:
-        return {"date": today, "presses": 0, "target": DAILY_GOAL_TARGET}
-
     return {
-        "date": today,
-        "presses": int(data.get("presses", 0)),
-        "target": int(data.get("target", DAILY_GOAL_TARGET)),
+        "date": row["date"],
+        "presses": int(row["presses"] or 0),
+        "target": int(row["target"] or DAILY_GOAL_TARGET),
     }
 
 
 def save_daily_goal(data):
-    save_json_atomic(DAILY_GOAL_FILE, data)
+    init_db()
+    date = data.get("date") or today_key()
+    with db_connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO daily_goals(date, presses, target)
+            VALUES (?, ?, ?)
+            ON CONFLICT(date) DO UPDATE SET
+                presses = excluded.presses,
+                target = excluded.target
+            """,
+            (
+                date,
+                int(data.get("presses", 0) or 0),
+                int(data.get("target", DAILY_GOAL_TARGET) or DAILY_GOAL_TARGET),
+            ),
+        )
 
 
 def load_global_milestone_unlocks():
-    if not os.path.exists(GLOBAL_MILESTONES_FILE):
-        return {}
-
-    try:
-        with open(GLOBAL_MILESTONES_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (OSError, json.JSONDecodeError):
-        return {}
+    init_db()
+    with db_connect() as conn:
+        rows = conn.execute("SELECT id, data FROM global_milestones").fetchall()
+    unlocks = {}
+    for row in rows:
+        try:
+            unlocks[row["id"]] = json.loads(row["data"])
+        except (TypeError, json.JSONDecodeError):
+            continue
+    return unlocks
 
 
 def save_global_milestone_unlocks(data):
-    save_json_atomic(GLOBAL_MILESTONES_FILE, data)
+    init_db()
+    with db_connect() as conn:
+        conn.execute("DELETE FROM global_milestones")
+        for milestone_id, unlock in data.items():
+            conn.execute(
+                "INSERT OR REPLACE INTO global_milestones(id, data) VALUES (?, ?)",
+                (milestone_id, dumps_json(unlock)),
+            )
+
+
+def normalize_divide_unlock(unlock):
+    if not isinstance(unlock, dict):
+        unlock = {}
+
+    teams = unlock.get("teams")
+    if not isinstance(teams, dict):
+        teams = {}
+
+    for team in DIVIDE_TEAMS:
+        team_data = teams.get(team)
+        if not isinstance(team_data, dict):
+            team_data = {}
+        team_data["presses"] = int(team_data.get("presses", 0) or 0)
+        teams[team] = team_data
+
+    unlock["teams"] = teams
+    unlock["season"] = int(unlock.get("season", 1) or 1)
+    return unlock
+
+
+def divide_is_active(unlocks=None):
+    unlocks = unlocks if unlocks is not None else load_global_milestone_unlocks()
+    unlock = unlocks.get("divide")
+    return bool(unlock and not unlock.get("ended_at"))
+
+
+def divide_player_payload(name, leaderboard=None, unlocks=None):
+    leaderboard = leaderboard if leaderboard is not None else load_leaderboard()
+    unlocks = unlocks if unlocks is not None else load_global_milestone_unlocks()
+    player = leaderboard.get(name, {})
+    team = player.get("divide_team")
+    if team not in DIVIDE_TEAMS:
+        team = None
+
+    return {
+        "name": name,
+        "team": team,
+        "presses": int(player.get("divide_presses", 0) or 0),
+        "title": player.get("title", ""),
+    }
+
+
+def divide_state_payload(name=None, leaderboard=None, unlocks=None):
+    unlocks = unlocks if unlocks is not None else load_global_milestone_unlocks()
+    unlock = unlocks.get("divide")
+    active = divide_is_active(unlocks)
+    if unlock:
+        unlock = normalize_divide_unlock(unlock)
+
+    team_payload = {}
+    for team, meta in DIVIDE_TEAMS.items():
+        team_unlock = unlock["teams"][team] if unlock else {"presses": 0}
+        team_payload[team] = {
+            "id": team,
+            "name": meta["name"],
+            "presses": int(team_unlock.get("presses", 0) or 0),
+            "champion_skin": meta["skin"],
+            "mvp_title": meta["title"],
+        }
+
+    leaderboard = leaderboard if leaderboard is not None else load_leaderboard()
+    mvps = {}
+    for team in DIVIDE_TEAMS:
+        contenders = [
+            (player_name, player)
+            for player_name, player in leaderboard.items()
+            if player.get("divide_team") == team
+        ]
+        if contenders:
+            player_name, player = max(
+                contenders,
+                key=lambda item: int(item[1].get("divide_presses", 0) or 0),
+            )
+            mvps[team] = {
+                "name": player_name,
+                "presses": int(player.get("divide_presses", 0) or 0),
+                "title": DIVIDE_TEAMS[team]["title"],
+            }
+        else:
+            mvps[team] = None
+
+    red = team_payload["red"]["presses"]
+    blue = team_payload["blue"]["presses"]
+    leader = "tie"
+    if red > blue:
+        leader = "red"
+    elif blue > red:
+        leader = "blue"
+
+    payload = {
+        "active": active,
+        "season": int(unlock.get("season", 1) if unlock else 1),
+        "unlocked_at": unlock.get("unlocked_at") if unlock else None,
+        "ended_at": unlock.get("ended_at") if unlock else None,
+        "teams": team_payload,
+        "leader": leader,
+        "mvps": mvps,
+    }
+    if name:
+        payload["player"] = divide_player_payload(name, leaderboard, unlocks)
+    return payload
+
+
+def choose_divide_team(name, team):
+    if team not in DIVIDE_TEAMS:
+        return None, "invalid team"
+
+    unlocks = load_global_milestone_unlocks()
+    if not divide_is_active(unlocks):
+        return None, "divide is not active"
+
+    unlocks["divide"] = normalize_divide_unlock(unlocks["divide"])
+    leaderboard = load_leaderboard()
+    if name not in leaderboard:
+        leaderboard[name] = {
+            "presses": 0,
+            "achievements": 0,
+            "exclusive_achievements": [],
+            "event_achievements": [],
+            "skins": []
+        }
+
+    player = leaderboard[name]
+    current_team = player.get("divide_team")
+    if current_team in DIVIDE_TEAMS and current_team != team:
+        return None, "team already chosen"
+
+    player["divide_team"] = team
+    player["divide_season"] = unlocks["divide"].get("season", 1)
+    player["divide_presses"] = int(player.get("divide_presses", 0) or 0)
+    save_leaderboard(leaderboard)
+    save_global_milestone_unlocks(unlocks)
+    return divide_state_payload(name, leaderboard, unlocks), None
+
+
+def record_divide_press(player, unlocks, delta):
+    if not divide_is_active(unlocks):
+        return None
+
+    unlocks["divide"] = normalize_divide_unlock(unlocks["divide"])
+    team = player.get("divide_team")
+    if team not in DIVIDE_TEAMS:
+        return None
+
+    unlocks["divide"]["teams"][team]["presses"] += delta
+    player["divide_presses"] = int(player.get("divide_presses", 0) or 0) + delta
+    return team
 
 
 def update_global_milestone_unlocks(previous_presses, total_presses):
@@ -291,6 +603,8 @@ def update_global_milestone_unlocks(previous_presses, total_presses):
         milestone_id = milestone["id"]
         if previous_presses < milestone["threshold"] <= total_presses and milestone_id not in unlocks:
             unlocks[milestone_id] = {"unlocked_at": now}
+            if milestone_id == "divide":
+                unlocks[milestone_id] = normalize_divide_unlock(unlocks[milestone_id])
             new_unlocks.append(milestone)
 
     if new_unlocks:
@@ -307,6 +621,8 @@ def serialize_global_milestones(total_presses):
     for milestone in GLOBAL_MILESTONE_DEFS:
         if total_presses >= milestone["threshold"] and milestone["id"] not in unlocks:
             unlocks[milestone["id"]] = {"unlocked_at": now.isoformat()}
+            if milestone["id"] == "divide":
+                unlocks[milestone["id"]] = normalize_divide_unlock(unlocks[milestone["id"]])
             changed = True
 
     if changed:
@@ -318,9 +634,14 @@ def serialize_global_milestones(total_presses):
         unlock = unlocks.get(milestone["id"])
         item["status"] = "locked"
         if unlock:
+            if milestone["id"] == "divide":
+                unlock = normalize_divide_unlock(unlock)
+                item["divide"] = divide_state_payload(unlocks=unlocks)
             unlocked_at = datetime.fromisoformat(unlock["unlocked_at"])
             item["unlocked_at"] = unlock["unlocked_at"]
-            if milestone["active_hours"]:
+            if milestone["id"] == "divide" and not unlock.get("ended_at"):
+                item["status"] = "active"
+            elif milestone["active_hours"]:
                 active_until = unlocked_at + timedelta(hours=milestone["active_hours"])
                 item["active_until"] = active_until.isoformat()
                 item["status"] = "active" if now < active_until else "unlocked"
@@ -339,6 +660,8 @@ def active_global_milestone(milestone_id):
 
     milestone = next((item for item in GLOBAL_MILESTONE_DEFS if item["id"] == milestone_id), None)
     if not milestone or not milestone["active_hours"]:
+        if milestone_id == "divide":
+            return divide_is_active(unlocks)
         return False
 
     unlocked_at = datetime.fromisoformat(unlock["unlocked_at"])
@@ -403,6 +726,7 @@ def press():
     new_world_firsts = []
     new_global_milestones = []
     event_rewards = {"event_achievements": [], "skins": []}
+    divide_state = None
     with storage_lock:
         stats = repair_total_presses(load_stats())
         previous_total_presses = int(stats.get("total_presses", 0))
@@ -456,12 +780,17 @@ def press():
             previous_total_presses,
             stats["total_presses"]
         )
+        milestone_unlocks = load_global_milestone_unlocks()
+        divide_team = record_divide_press(player, milestone_unlocks, delta)
+        if divide_team:
+            save_global_milestone_unlocks(milestone_unlocks)
         event_rewards = apply_global_event_rewards(player)
         player["achievements"] = achievement_count(
             player["presses"],
             player["exclusive_achievements"]
         ) + len(player["event_achievements"])
         save_leaderboard(leaderboard)
+        divide_state = divide_state_payload(name, leaderboard, milestone_unlocks)
 
     broadcast()
 
@@ -471,7 +800,8 @@ def press():
         new_world_firsts=new_world_firsts,
         daily_goal=daily_goal,
         new_global_milestones=new_global_milestones,
-        event_rewards=event_rewards
+        event_rewards=event_rewards,
+        divide=divide_state
     )
 
 
@@ -544,6 +874,7 @@ def global_milestones():
         current_stats = repair_total_presses(load_stats())
         total_presses = int(current_stats.get("total_presses", 0))
         milestones = serialize_global_milestones(total_presses)
+        divide = divide_state_payload()
 
     next_milestone = next(
         (milestone for milestone in milestones if total_presses < milestone["threshold"]),
@@ -552,8 +883,31 @@ def global_milestones():
     return jsonify(
         total_presses=total_presses,
         next_milestone=next_milestone,
-        milestones=milestones
+        milestones=milestones,
+        divide=divide
     )
+
+
+@app.get("/api/divide")
+def divide_state():
+    name = str(request.args.get("name", "")).strip()[:32]
+    with storage_lock:
+        payload = divide_state_payload(name or None)
+    return jsonify(payload)
+
+
+@app.post("/api/divide/choose")
+def divide_choose():
+    payload = request.json or {}
+    name = str(payload.get("name", "Anonymous")).strip()[:32] or "Anonymous"
+    team = str(payload.get("team", "")).strip().lower()
+    with storage_lock:
+        result, error = choose_divide_team(name, team)
+
+    if error:
+        status = 409 if error == "team already chosen" else 400
+        return jsonify(error=error), status
+    return jsonify(result)
 
 
 # -----------------------
@@ -564,6 +918,11 @@ def global_milestones():
 def leaderboard():
 
     data = load_leaderboard()
+    divide = divide_state_payload(leaderboard=data)
+    mvp_titles = {}
+    for team, mvp in divide.get("mvps", {}).items():
+        if mvp:
+            mvp_titles[mvp["name"]] = DIVIDE_TEAMS[team]["title"]
 
     sorted_players = sorted(
         data.items(),
@@ -577,7 +936,10 @@ def leaderboard():
         result.append({
             "name": name,
             "presses": info["presses"],
-            "achievements": info.get("achievements", 0)
+            "achievements": info.get("achievements", 0),
+            "team": info.get("divide_team"),
+            "divide_presses": int(info.get("divide_presses", 0) or 0),
+            "title": mvp_titles.get(name, info.get("title", ""))
         })
 
     return jsonify(result)
@@ -606,6 +968,7 @@ def achievements():
         exclusive_achievements=player.get("exclusive_achievements", []),
         event_achievements=player.get("event_achievements", []),
         skins=player.get("skins", []),
+        divide=divide_state_payload(name, leaderboard_data),
         world_firsts=ordered_claims,
         next_world_first_milestone=next_milestone
     )

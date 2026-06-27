@@ -54,6 +54,7 @@
       bestStreak:0,
       lastPressDate:''
     },
+    divideTeam:null,
     skins:{
       owned:['classic'],
       equipped:'classic'
@@ -64,6 +65,8 @@
   let nightFallsActive = false;
   let nightFallsAudio = null;
   let meteorUnlocked = false;
+  let divideState = {active:false, teams:{red:{presses:0}, blue:{presses:0}}, leader:'tie', player:{team:null, presses:0}};
+  let divideChoiceModal = null;
   
   // --- Data ---
   const messages = [
@@ -113,6 +116,8 @@
     {id:'classic', name:'Classic', unlock:'Starter skin', requirement:()=>true},
     {id:'moon', name:'Moon', unlock:'Drops during The Night Falls', requirement:()=>state.skins.owned.includes('moon')},
     {id:'meteor', name:'Meteor', unlock:'Drops during Meteor Impact', requirement:()=>state.skins.owned.includes('meteor')},
+    {id:'red-champion', name:'Red Champion', unlock:'Win a Great Divide season with Team Red', requirement:()=>state.skins.owned.includes('red-champion')},
+    {id:'blue-champion', name:'Blue Champion', unlock:'Win a Great Divide season with Team Blue', requirement:()=>state.skins.owned.includes('blue-champion')},
     {id:'sunrise', name:'Sunrise', unlock:'Press 25 times', requirement:()=>state.presses >= 25},
     {id:'matrix', name:'Matrix', unlock:'Press 100 times', requirement:()=>state.presses >= 100},
     {id:'royal', name:'Royal', unlock:'Reach a 3 day streak', requirement:()=>getDaily().streak >= 3},
@@ -143,6 +148,7 @@
       bestStreak:0,
       lastPressDate:''
     }, state.daily || {});
+    if(state.divideTeam !== 'red' && state.divideTeam !== 'blue') state.divideTeam = null;
     state.skins = Object.assign({
       owned:['classic'],
       equipped:'classic'
@@ -228,7 +234,13 @@
     for(const skin of rewards.skins || []){
       if(!state.skins.owned.includes(skin)){
         state.skins.owned.push(skin);
-        const skinName = skin === 'moon' ? 'Moon Button' : (skin === 'meteor' ? 'Meteor Button' : skin);
+        const skinNames = {
+          moon:'Moon Button',
+          meteor:'Meteor Button',
+          'red-champion':'Red Champion Button',
+          'blue-champion':'Blue Champion Button'
+        };
+        const skinName = skinNames[skin] || skin;
         toast(`Rare skin dropped: ${skinName}`, {time:7000});
         showSkinDropPopup(skin, skinName);
       }
@@ -359,6 +371,187 @@
       if(msgBox) msgBox.textContent = `${Number(totalPresses || 0).toLocaleString()}... impact in ${remaining}`;
     }else{
       document.body.classList.remove('meteor-countdown');
+    }
+  }
+
+  function divideTeamName(team){
+    return team === 'red' ? 'Red' : (team === 'blue' ? 'Blue' : 'Unchosen');
+  }
+
+  function normalizeDivideState(data){
+    data = data || {};
+    const teams = data.teams || {};
+    return Object.assign({
+      active:false,
+      season:1,
+      teams:{
+        red:Object.assign({id:'red', name:'Red', presses:0}, teams.red || {}),
+        blue:Object.assign({id:'blue', name:'Blue', presses:0}, teams.blue || {})
+      },
+      leader:'tie',
+      mvps:{red:null, blue:null},
+      player:{team:null, presses:0}
+    }, data, {
+      teams:{
+        red:Object.assign({id:'red', name:'Red', presses:0}, teams.red || {}),
+        blue:Object.assign({id:'blue', name:'Blue', presses:0}, teams.blue || {})
+      },
+      player:Object.assign({team:null, presses:0}, data.player || {})
+    });
+  }
+
+  function ensureDivideLayer(){
+    let layer = qs('#great-divide-layer');
+    if(!layer){
+      layer = document.createElement('div');
+      layer.id = 'great-divide-layer';
+      layer.setAttribute('aria-hidden', 'true');
+      layer.innerHTML = '<span class="divide-side divide-side-red"></span><span class="divide-side divide-side-blue"></span><span class="divide-rift"></span>';
+      document.body.appendChild(layer);
+    }
+
+    let board = qs('#great-divide-scoreboard');
+    if(!board){
+      board = document.createElement('aside');
+      board.id = 'great-divide-scoreboard';
+      board.className = 'glass divide-scoreboard';
+      board.innerHTML = `
+        <div class="divide-score-head">
+          <span>The Great Divide</span>
+          <strong id="divide-player-team">Choose a side</strong>
+        </div>
+        <div class="divide-score-row red">
+          <span>Red</span>
+          <strong id="divide-red-score">0</strong>
+        </div>
+        <div class="divide-score-row blue">
+          <span>Blue</span>
+          <strong id="divide-blue-score">0</strong>
+        </div>
+        <div class="divide-score-track"><span id="divide-balance-bar"></span></div>
+        <p id="divide-leader-copy" class="muted">Waiting for the first team press.</p>
+      `;
+      document.body.appendChild(board);
+    }
+    return {layer, board};
+  }
+
+  function updateDivideScoreboard(){
+    ensureDivideLayer();
+    const red = Number(divideState.teams?.red?.presses || 0);
+    const blue = Number(divideState.teams?.blue?.presses || 0);
+    const total = red + blue;
+    const redPct = total ? Math.round(red / total * 100) : 50;
+    const team = divideState.player?.team || state.divideTeam;
+    const redScore = qs('#divide-red-score');
+    const blueScore = qs('#divide-blue-score');
+    const bar = qs('#divide-balance-bar');
+    const teamEl = qs('#divide-player-team');
+    const leaderCopy = qs('#divide-leader-copy');
+
+    if(redScore) redScore.textContent = red.toLocaleString();
+    if(blueScore) blueScore.textContent = blue.toLocaleString();
+    if(bar) bar.style.width = redPct + '%';
+    if(teamEl) teamEl.textContent = team ? `You are Team ${divideTeamName(team)}` : 'Choose a side';
+    if(leaderCopy){
+      const leader = divideState.leader || 'tie';
+      if(leader === 'tie'){
+        leaderCopy.textContent = total ? 'The season is tied.' : 'Every team press moves the season.';
+      }else{
+        leaderCopy.textContent = `Team ${divideTeamName(leader)} is leading by ${Math.abs(red - blue).toLocaleString()} presses.`;
+      }
+    }
+  }
+
+  function showGreatDivideChoice(){
+    if(divideChoiceModal || !divideState.active) return;
+    if(onboard && onboard.style.display !== 'none') return;
+    divideChoiceModal = document.createElement('div');
+    divideChoiceModal.className = 'modal divide-choice-modal';
+    const card = document.createElement('div');
+    card.className = 'modal-card glass divide-choice-card';
+    card.innerHTML = `
+      <p class="eyebrow">50,000 presses reached</p>
+      <h2>The Great Divide</h2>
+      <p class="muted">Choose Red or Blue. This choice is locked for this player name for the season.</p>
+      <div class="divide-choice-grid">
+        <button class="divide-choice red" type="button" data-team="red">
+          <span>Red</span>
+          <strong>Power, heat, momentum.</strong>
+        </button>
+        <button class="divide-choice blue" type="button" data-team="blue">
+          <span>Blue</span>
+          <strong>Focus, signal, control.</strong>
+        </button>
+      </div>
+    `;
+    divideChoiceModal.appendChild(card);
+    document.body.appendChild(divideChoiceModal);
+    for(const option of card.querySelectorAll('[data-team]')){
+      option.addEventListener('click', () => chooseDivideTeam(option.dataset.team));
+    }
+  }
+
+  function closeDivideChoice(){
+    if(divideChoiceModal){
+      divideChoiceModal.remove();
+      divideChoiceModal = null;
+    }
+  }
+
+  async function chooseDivideTeam(team){
+    try{
+      const res = await apiFetch('/api/divide/choose', {
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify({name:state.gamerTag || 'Traveler', team})
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error(data.error || 'team choice failed');
+      divideState = normalizeDivideState(data);
+      state.divideTeam = divideState.player.team;
+      save();
+      applyGreatDivideEvent({status:'active'}, divideState, false);
+      toast(`Team ${divideTeamName(state.divideTeam)} locked in. Every press now counts for your side.`, {time:6000});
+      closeDivideChoice();
+    }catch(error){
+      toast(error.message || 'Could not choose a team yet.', {time:5000});
+    }
+  }
+
+  function applyGreatDivideEvent(milestone, data, animate=false){
+    divideState = normalizeDivideState(data || divideState);
+    const active = Boolean(divideState.active || milestoneIsActive(milestone));
+    divideState.active = active;
+    document.body.classList.toggle('great-divide-active', active);
+    document.body.classList.toggle('divide-red', active && (divideState.player?.team || state.divideTeam) === 'red');
+    document.body.classList.toggle('divide-blue', active && (divideState.player?.team || state.divideTeam) === 'blue');
+
+    if(!active){
+      const board = qs('#great-divide-scoreboard');
+      if(board) board.remove();
+      closeDivideChoice();
+      return;
+    }
+
+    ensureDivideLayer();
+    updateDivideScoreboard();
+
+    const team = divideState.player?.team || state.divideTeam;
+    if(team){
+      state.divideTeam = team;
+      if(msgBox) msgBox.textContent = `The Great Divide is active. Your presses now help Team ${divideTeamName(team)}.`;
+    }else{
+      if(msgBox) msgBox.textContent = 'The Great Divide is active. Choose Red or Blue before your presses help a team.';
+      showGreatDivideChoice();
+    }
+    const subtext = qs('#subtext');
+    if(subtext) subtext.textContent = 'Red versus Blue. Every press matters now.';
+
+    if(animate && !sessionStorage.getItem('thebutton:divide-intro-seen')){
+      sessionStorage.setItem('thebutton:divide-intro-seen', '1');
+      document.body.classList.add('great-divide-intro');
+      setTimeout(()=>document.body.classList.remove('great-divide-intro'), 3200);
     }
   }
 
@@ -584,9 +777,12 @@ if(visitorGreeting){
           applyNightFallsEvent(true, true);
         }else if(milestone.id === 'meteor'){
           applyMeteorEvent(milestone, 20000, true);
+        }else if(milestone.id === 'divide'){
+          applyGreatDivideEvent(milestone, data.divide, true);
         }
       }
       applyEventRewards(data.event_rewards);
+      if(data.divide) applyGreatDivideEvent({status:data.divide.active ? 'active' : 'locked'}, data.divide, false);
       save();
     }).catch(()=>{
       const k='thebutton:global';
@@ -977,6 +1173,7 @@ function alienContact() {
   acceptOnboard.onclick = ()=>{
     const tag = gamerTagInput.value.trim() || 'Traveler';
     state.gamerTag = tag; state.humor = humorToggle.checked; onboard.style.display='none'; save(); render();
+    fetchGlobalMilestones();
     if(state.humor && 'Notification' in window){
       if(Notification.permission === 'default'){
         Notification.requestPermission().then(p=>{ if(p==='granted'){ toast('Notifications enabled — occasional surprises may follow.'); new Notification('Department of Button Affairs', {body:'Thank you. Occasional notices may appear.'}); scheduleSampleNotification(); } else { toast('Notifications denied. Humor mode continues silently.'); } });
@@ -1160,8 +1357,17 @@ if(countEl){
       const data = await res.json();
       const firstEra = (data.milestones || []).find(milestone => milestone.id === 'first-era');
       const meteor = (data.milestones || []).find(milestone => milestone.id === 'meteor');
+      const divide = (data.milestones || []).find(milestone => milestone.id === 'divide');
+      let divideData = data.divide;
+      if(milestoneIsActive(divide)){
+        try{
+          const divideRes = await apiFetch(`/api/divide?name=${encodeURIComponent(state.gamerTag || 'Traveler')}`);
+          if(divideRes.ok) divideData = await divideRes.json();
+        }catch(error){}
+      }
       applyNightFallsEvent(milestoneIsActive(firstEra), false);
       applyMeteorEvent(meteor, data.total_presses || 0, false);
+      applyGreatDivideEvent(divide, divideData, false);
     }catch(e){ /* keep the normal button page if the API is unavailable */ }
   }
 

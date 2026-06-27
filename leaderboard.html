@@ -36,10 +36,13 @@
             <th>#</th>
             <th>Name</th>
             <th>Presses</th>
+            <th>Team</th>
+            <th>Team Presses</th>
+            <th>Title</th>
             <th>Achievements</th>
           </tr>
         </thead>
-        <tbody id="leaderboard-body"><tr><td colspan="4">Loading leaderboard...</td></tr></tbody>
+        <tbody id="leaderboard-body"><tr><td colspan="7">Loading leaderboard...</td></tr></tbody>
       </table>
     </section>
   </main>
@@ -91,13 +94,21 @@
     hasRenderedLeaderboard = true;
 
     if(!Array.isArray(players) || players.length === 0){
-      body.innerHTML = '<tr><td colspan="4">No leaderboard entries yet.</td></tr>';
+      body.innerHTML = '<tr><td colspan="7">No leaderboard entries yet.</td></tr>';
       return;
     }
 
     players.forEach((player,index)=>{
       const row = body.insertRow();
-      [index + 1, player.name, Number(player.presses || 0).toLocaleString(), player.achievements || 0]
+      [
+        index + 1,
+        player.name,
+        Number(player.presses || 0).toLocaleString(),
+        player.team ? player.team.toUpperCase() : '-',
+        Number(player.divide_presses || 0).toLocaleString(),
+        player.title || '-',
+        player.achievements || 0
+      ]
         .forEach(value => {
           const cell = row.insertCell();
           cell.textContent = value;
@@ -111,7 +122,7 @@
       renderLeaderboard(await fetchLeaderboard());
     } catch(err) {
       if(body && !hasRenderedLeaderboard){
-        body.innerHTML = '<tr><td colspan="4">Leaderboard is unavailable.</td></tr>';
+        body.innerHTML = '<tr><td colspan="7">Leaderboard is unavailable.</td></tr>';
       }
     }
   }
