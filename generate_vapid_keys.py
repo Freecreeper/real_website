@@ -19,11 +19,12 @@ def main():
         Encoding.X962,
         PublicFormat.UncompressedPoint,
     )
-    private_key = vapid.private_pem().decode("utf-8").replace("\n", "\\n")
+    private_value = vapid.private_key.private_numbers().private_value
+    private_key = private_value.to_bytes(32, "big")
 
     print("Add these to your Flask environment or .env:")
     print("VAPID_PUBLIC_KEY=" + base64url(public_key))
-    print("VAPID_PRIVATE_KEY=" + private_key)
+    print("VAPID_PRIVATE_KEY=" + base64url(private_key))
     print("VAPID_SUBJECT=mailto:admin@pressthebutton.click")
 
 

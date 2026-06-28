@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify, send_from_directory, abort
-from flask_socketio import SocketIO, emit
 from difflib import SequenceMatcher
 import base64
 import json
@@ -28,14 +27,13 @@ def load_dotenv(path=os.path.join(BASE_DIR, ".env")):
 
 load_dotenv()
 app = Flask(__name__, static_folder=None)
-socketio = SocketIO(app, cors_allowed_origins="*")
 try:
     from pywebpush import WebPushException, webpush
-    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_public_key
+    from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat, load_pem_private_key, load_pem_public_key
 except ImportError:
     WebPushException = Exception
     webpush = None
-    Encoding = PublicFormat = load_pem_public_key = None
+    Encoding = PublicFormat = load_pem_private_key = load_pem_public_key = None
 
 STATS_FILE = os.path.join(BASE_DIR, "stats.json")
 LEADERBOARD_FILE = os.path.join(BASE_DIR, "leaderboard.json")
@@ -340,8 +338,31 @@ def browser_vapid_public_key(value):
     return ""
 
 
+def webpush_vapid_private_key(value):
+    value = str(value or "").strip()
+    if not value:
+        return ""
+
+    try:
+        raw = base64url_decode(value)
+        if len(raw) == 32:
+            return value.rstrip("=")
+    except Exception:
+        pass
+
+    if "BEGIN PRIVATE KEY" in value and load_pem_private_key:
+        try:
+            private_key = load_pem_private_key(value.encode("utf-8"), password=None)
+            private_value = private_key.private_numbers().private_value
+            return base64url_encode(private_value.to_bytes(32, "big"))
+        except Exception:
+            return ""
+
+    return value
+
+
 def push_enabled():
-    return bool(webpush and browser_vapid_public_key(VAPID_PUBLIC_KEY) and VAPID_PRIVATE_KEY)
+    return bool(webpush and browser_vapid_public_key(VAPID_PUBLIC_KEY) and webpush_vapid_private_key(VAPID_PRIVATE_KEY))
 
 
 def save_push_subscription(name, subscription, chaos_enabled=True):
@@ -396,7 +417,7 @@ def send_push_notification(subscription, title, body, url="/", tag="the-button-c
         webpush(
             subscription_info=subscription,
             data=payload,
-            vapid_private_key=VAPID_PRIVATE_KEY,
+            vapid_private_key=webpush_vapid_private_key(VAPID_PRIVATE_KEY),
             vapid_claims={"sub": VAPID_SUBJECT},
         )
         return True, None
@@ -1137,7 +1158,7 @@ def award_world_firsts(player, name, current_presses):
 # -----------------------
 
 def broadcast():
-    socketio.emit("stats_update", load_stats())
+    return
 
 
 # -----------------------
@@ -1147,8 +1168,9 @@ def broadcast():
 @app.get("/api/push/config")
 def push_config():
     public_key = browser_vapid_public_key(VAPID_PUBLIC_KEY)
+    private_key = webpush_vapid_private_key(VAPID_PRIVATE_KEY)
     return jsonify(
-        enabled=bool(webpush and public_key and VAPID_PRIVATE_KEY),
+        enabled=bool(webpush and public_key and private_key),
         public_key=public_key,
         subject=VAPID_SUBJECT,
     )
@@ -1524,22 +1546,8 @@ def static_files(filename):
 
 
 # -----------------------
-# Socket.IO
-# -----------------------
-
-@socketio.on("connect")
-def connect():
-    emit("stats_update", load_stats())
-
-
-# -----------------------
 # Start Server
 # -----------------------
 
 if __name__ == "__main__":
-    socketio.run(
-        app,
-        host="0.0.0.0",
-        port=5000,
-        allow_unsafe_werkzeug=True
-    )
+    app.run(host="0.0.0.0", port=5000, threaded=False)
