@@ -92,11 +92,11 @@
 
     const subscription = await currentSubscription();
     if(subscription){
-      setPushStatus('Enabled', 'good', 'Chaos Mode notifications are enabled on this device.');
+      setPushStatus('Enabled', 'good', 'Notifications are enabled for Chaos Mode and podium changes on this device.');
     }else if(Notification.permission === 'granted'){
       setPushStatus('Allowed', 'warn', 'Permission is allowed, but this device is not subscribed yet.');
     }else{
-      setPushStatus('Off', 'neutral', 'Enable notifications to receive rare Button alerts when the site is closed.');
+      setPushStatus('Off', 'neutral', 'Enable notifications to receive rare Button alerts and podium changes when the site is closed.');
     }
   }
 
@@ -157,7 +157,7 @@
 
     state.humor = true;
     saveState(state);
-    setPushStatus('Enabled', 'good', 'Chaos Mode notifications are enabled on this device.');
+    setPushStatus('Enabled', 'good', 'Notifications are enabled for Chaos Mode and podium changes on this device.');
     return subscription;
   }
 

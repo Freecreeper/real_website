@@ -461,6 +461,51 @@ def send_push_to_all_async(title, body, url="/", tag="the-button-chaos"):
     ).start()
 
 
+def send_push_to_player(name, title, body, url="/leaderboard.html", tag="the-button-podium"):
+    if not push_enabled():
+        return {"sent": 0, "failed": 0}
+
+    clean_name = clean_player_name(name)
+    init_db()
+    with db_connect() as conn:
+        rows = conn.execute(
+            """
+            SELECT endpoint, subscription
+            FROM push_subscriptions
+            WHERE name = ? AND chaos_enabled = 1
+            """,
+            (clean_name,),
+        ).fetchall()
+
+    sent = 0
+    failed = 0
+    for row in rows:
+        try:
+            subscription = json.loads(row["subscription"])
+        except (TypeError, json.JSONDecodeError):
+            delete_push_subscription(row["endpoint"])
+            failed += 1
+            continue
+        ok, error = send_push_notification(subscription, title, body, url, tag)
+        if ok:
+            sent += 1
+        else:
+            failed += 1
+            if error and ("410" in error or "404" in error):
+                delete_push_subscription(row["endpoint"])
+    return {"sent": sent, "failed": failed}
+
+
+def send_push_to_player_async(name, title, body, url="/leaderboard.html", tag="the-button-podium"):
+    if not push_enabled():
+        return
+    Thread(
+        target=send_push_to_player,
+        args=(name, title, body, url, tag),
+        daemon=True,
+    ).start()
+
+
 def normalize_player_name(name):
     return " ".join(str(name or "").strip().lower().split())
 
@@ -657,6 +702,63 @@ def public_leaderboard(data=None):
         name: player
         for name, player in data.items()
         if not is_rejected_name(name)
+    }
+
+
+def leaderboard_podium(data=None):
+    leaderboard = public_leaderboard(data if data is not None else load_leaderboard())
+    ranked = sorted(
+        leaderboard.items(),
+        key=lambda item: (-int(item[1].get("presses", 0) or 0), normalize_player_name(item[0])),
+    )
+    return [
+        {
+            "name": name,
+            "rank": index + 1,
+            "presses": int(player.get("presses", 0) or 0),
+        }
+        for index, (name, player) in enumerate(ranked[:3])
+    ]
+
+
+def podium_push_notifications(before, after):
+    before_by_name = {entry["name"]: entry for entry in before}
+    after_by_name = {entry["name"]: entry for entry in after}
+    notifications = []
+
+    for name, entry in after_by_name.items():
+        if name not in before_by_name:
+            notifications.append({
+                "name": name,
+                "title": "You made the podium!",
+                "body": f"You are now #{entry['rank']} with {entry['presses']:,} presses.",
+                "tag": f"podium-enter-{normalize_player_name(name)}",
+            })
+
+    for name, entry in before_by_name.items():
+        if name not in after_by_name:
+            notifications.append({
+                "name": name,
+                "title": "You got bumped off the podium",
+                "body": "You fell out of the top 3. Press back and reclaim it.",
+                "tag": f"podium-exit-{normalize_player_name(name)}",
+            })
+
+    return notifications
+
+
+def first_place_push_notification(before, after):
+    previous_first = before[0] if before else None
+    new_first = after[0] if after else None
+    if not new_first:
+        return None
+    if previous_first and previous_first["name"] == new_first["name"]:
+        return None
+
+    return {
+        "title": "New #1 on the leaderboard!",
+        "body": f"{new_first['name']} just took 1st place with {new_first['presses']:,} presses.",
+        "tag": f"first-place-{normalize_player_name(new_first['name'])}",
     }
 
 
@@ -1250,11 +1352,14 @@ def press():
     new_global_milestones = []
     event_rewards = {"event_achievements": [], "skins": []}
     divide_state = None
+    podium_notifications = []
+    first_place_notification = None
     with storage_lock:
         stats = repair_total_presses(load_stats())
         previous_total_presses = int(stats.get("total_presses", 0))
 
         leaderboard = load_leaderboard()
+        previous_podium = leaderboard_podium(leaderboard)
         if name not in leaderboard:
             leaderboard[name] = {
                 "presses": 0,
@@ -1301,8 +1406,26 @@ def press():
         ) + len(player["event_achievements"])
         save_leaderboard(leaderboard)
         divide_state = divide_state_payload(name, leaderboard, milestone_unlocks)
+        new_podium = leaderboard_podium(leaderboard)
+        podium_notifications = podium_push_notifications(previous_podium, new_podium)
+        first_place_notification = first_place_push_notification(previous_podium, new_podium)
 
     broadcast()
+    for notification in podium_notifications:
+        send_push_to_player_async(
+            notification["name"],
+            notification["title"],
+            notification["body"],
+            "/leaderboard.html",
+            notification["tag"],
+        )
+    if first_place_notification:
+        send_push_to_all_async(
+            first_place_notification["title"],
+            first_place_notification["body"],
+            "/leaderboard.html",
+            first_place_notification["tag"],
+        )
     for milestone in new_global_milestones:
         send_push_to_all_async(
             "Global milestone unlocked",

@@ -788,7 +788,7 @@ if(visitorGreeting){
   // --- Pranks ---
   const pranks = [
     'fakeUpdate','goose','fakeCall','alien','potato','teleport',
-    'dvd','secretReward','stanwe','soggySocks','banReport','dadJoke'
+    'dvd','secretReward','stanwe','soggySocks','banReport','dadJoke','coconutWater'
   ];
   function triggerPrank(forcedChoice=null){
     state.pranks++;
@@ -901,6 +901,7 @@ if(visitorGreeting){
       case 'soggySocks': prankSoggySocks(); break;
       case 'banReport': prankBanReport(); break;
       case 'dadJoke': prankDadJoke(); break;
+      case 'coconutWater': prankCoconutWater(); break;
       case 'rickroll': prankRickroll(); break;
       default: toast('Something strange happened.');
     }
@@ -1171,6 +1172,23 @@ function alienContact() {
     });
   }
 
+  function prankCoconutWater(){
+    const modal = document.createElement('div');
+    modal.className = 'modal coconut-water-modal';
+    const card = document.createElement('div');
+    card.className = 'modal-card glass coconut-water-card';
+    card.innerHTML = `
+      <h3>Important Hydration Check</h3>
+      <p class="coconut-water-text">coconot wader</p>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="pill primary" type="button">i am not indian</button>
+      </div>
+    `;
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+    card.querySelector('button').addEventListener('click', () => modal.remove());
+  }
+
  function prankRickroll() {
   const modal = document.createElement('div');
   modal.className = 'modal';
@@ -1348,7 +1366,7 @@ function alienContact() {
       if(Notification.permission === 'default'){
         Notification.requestPermission().then(p=>{ if(p==='granted'){ toast('Notifications enabled — occasional surprises may follow.'); new Notification('Department of Button Affairs', {body:'Thank you. Occasional notices may appear.'}); scheduleSampleNotification(); } else { toast('Notifications denied. Humor mode continues silently.'); } });
       } else if(Notification.permission === 'granted'){
-        toast('Notifications already enabled.'); new Notification('Department of Button Affairs', {body:'You will receive rare, funny notifications.'}); scheduleSampleNotification();
+        toast('Notifications already enabled.'); new Notification('Department of Button Affairs', {body:'You will receive rare alerts and podium updates.'}); scheduleSampleNotification();
       } else {
         toast('Notifications denied previously. You can enable them in browser settings.');
       }
@@ -1378,7 +1396,7 @@ function alienContact() {
       if(Notification.permission === 'default'){
         Notification.requestPermission().then(p=>{ if(p==='granted'){ toast('Notifications enabled - occasional surprises may follow.'); new Notification('Department of Button Affairs', {body:'Thank you. Occasional notices may appear.'}); scheduleSampleNotification(); } else { toast('Notifications denied. Humor mode continues silently.'); } });
       } else if(Notification.permission === 'granted'){
-        toast('Notifications already enabled.'); new Notification('Department of Button Affairs', {body:'You will receive rare, funny notifications.'}); scheduleSampleNotification();
+        toast('Notifications already enabled.'); new Notification('Department of Button Affairs', {body:'You will receive rare alerts and podium updates.'}); scheduleSampleNotification();
       } else {
         toast('Notifications denied previously. You can enable them in browser settings.');
       }
@@ -1582,7 +1600,7 @@ function alienContact() {
         throw new Error(payload.error || 'Test notification failed');
       }
 
-      return {ok:true, message:'Chaos Mode enabled. Watch for a test notification.'};
+      return {ok:true, message:'Notifications enabled. Watch for a test notification and podium alerts.'};
     }catch(error){
       return {ok:false, message:error.message || 'Could not enable notifications yet. Check server push config.'};
     }
