@@ -198,6 +198,15 @@ body.great-divide-intro{animation:dividePagePulse 3200ms ease both}
 .skin-drop-card{align-items:center;text-align:center}
 .skin-drop-preview{--size:132px;font-size:13px;letter-spacing:1px;box-shadow:0 0 38px rgba(124,242,255,.2),inset 0 -6px 18px rgba(0,0,0,.18)}
 .skin-drop-card h3{margin:0;font-size:28px}
+.soggy-socks-card{text-align:center;align-items:center}
+.soggy-sock-scene{position:relative;width:210px;height:118px;margin:4px auto 2px}
+.soggy-sock-scene .puddle{position:absolute;left:24px;right:24px;bottom:12px;height:30px;border-radius:50%;background:radial-gradient(ellipse at center,rgba(124,242,255,.55),rgba(44,103,155,.22) 62%,transparent 72%);animation:puddleWobble 1300ms ease-in-out infinite}
+.soggy-sock-scene .sock{position:absolute;top:24px;width:58px;height:74px;border-radius:24px 24px 18px 18px;background:linear-gradient(180deg,#f7fbff,#b9c7d7);box-shadow:0 12px 28px rgba(0,0,0,.24);animation:sockSquish 900ms ease-in-out infinite}
+.soggy-sock-scene .sock::after{content:"";position:absolute;left:11px;right:11px;bottom:8px;height:14px;border-radius:999px;background:rgba(124,242,255,.42)}
+.soggy-sock-scene .left{left:48px;transform:rotate(-10deg)}
+.soggy-sock-scene .right{right:48px;transform:rotate(10deg);animation-delay:220ms}
+@keyframes sockSquish{50%{top:34px;filter:saturate(1.4)}}
+@keyframes puddleWobble{50%{transform:scaleX(1.08);opacity:.82}}
 
 /* DVD logo used in DVD Mode */
 .dvd-logo{position:fixed;z-index:1000;width:120px;height:60px;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#021018;font-weight:800;border-radius:8px}

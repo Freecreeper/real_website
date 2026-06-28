@@ -41,6 +41,28 @@
     }
   }
 
+  function saveState(state){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }catch(error){}
+  }
+
+  function normalizeUnlockedLore(state){
+    const presses = Number(state.presses || 0);
+    const earnedCount = Math.min(lore.length, Math.floor(presses / 25));
+    const unlocked = new Set(
+      (Array.isArray(state.loreSeen) ? state.loreSeen : [])
+        .map(index => Number(index))
+        .filter(index => Number.isInteger(index) && index >= 0 && index < lore.length)
+    );
+    for(let index = 0; index < earnedCount; index++){
+      unlocked.add(index);
+    }
+    state.loreSeen = Array.from(unlocked).sort((a,b) => a - b);
+    saveState(state);
+    return new Set(state.loreSeen);
+  }
+
   function createEntry(text, index, unlocked){
     const entry = document.createElement('article');
     entry.className = `lore-entry ${unlocked ? 'unlocked' : 'locked'}`;
@@ -85,7 +107,7 @@
   }
 
   const state = getState();
-  const unlocked = new Set(state.loreSeen || []);
+  const unlocked = normalizeUnlockedLore(state);
   document.getElementById('lore-count').textContent = `${unlocked.size} / ${lore.length}`;
   document.getElementById('lore-summary').textContent =
     `A new record is recovered every 25 presses. You have ${Number(state.presses || 0).toLocaleString()} presses.`;

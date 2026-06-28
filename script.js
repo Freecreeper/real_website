@@ -698,6 +698,7 @@ if(visitorGreeting){
     if(loreList){
       loreList.innerHTML = '';
       state.loreSeen.forEach(i=>{
+        if(!lore[i]) return;
         const d = document.createElement('div'); d.textContent = lore[i]; loreList.appendChild(d);
       });
     }
@@ -750,13 +751,23 @@ if(visitorGreeting){
 
   // --- Lore unlocking ---
   function unlockLore(){
-    if(state.presses>0 && state.presses%25===0){
-      const idx = Math.floor(state.presses/25)-1;
+    const earnedCount = Math.min(lore.length, Math.floor(Number(state.presses || 0) / 25));
+    let unlocked = 0;
+    state.loreSeen = Array.isArray(state.loreSeen) ? state.loreSeen : [];
+    for(let idx = 0; idx < earnedCount; idx++){
       if(!state.loreSeen.includes(idx) && lore[idx]){
         state.loreSeen.push(idx);
-        toast('Lore unlocked');
-        save(); render();
+        unlocked++;
       }
+    }
+    state.loreSeen = state.loreSeen
+      .filter(idx => Number.isInteger(Number(idx)) && Number(idx) >= 0 && Number(idx) < lore.length)
+      .map(idx => Number(idx))
+      .sort((a,b) => a - b);
+    if(unlocked){
+      toast(unlocked === 1 ? 'Lore unlocked' : `${unlocked} lore records unlocked`);
+      save();
+      render();
     }
   }
 
@@ -777,7 +788,7 @@ if(visitorGreeting){
   // --- Pranks ---
   const pranks = [
     'fakeUpdate','goose','fakeCall','alien','potato','teleport',
-    'dvd','secretReward','stanwe'
+    'dvd','secretReward','stanwe','soggySocks'
   ];
   function triggerPrank(forcedChoice=null){
     state.pranks++;
@@ -865,6 +876,7 @@ if(visitorGreeting){
       case 'dvd': prankDVD(); break;
       case 'secretReward': prankSecretReward(); break;
       case 'stanwe': prankStanwe(); break;
+      case 'soggySocks': prankSoggySocks(); break;
       case 'rickroll': prankRickroll(); break;
       default: toast('Something strange happened.');
     }
@@ -952,6 +964,7 @@ function alienContact() {
     <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
       <button id="potato-human" class="pill">I am human</button>
       <button id="potato-goat" class="pill">I am a goat</button>
+      <button id="potato" class="pill">eat me</button>
     </div>
   `;
 
@@ -965,7 +978,12 @@ function alienContact() {
 
   card.querySelector('#potato-human').onclick = finish;
   card.querySelector('#potato-goat').onclick = finish;
+  card.querySelector('#potato').onclick = () => {
+    toast('The potato has been eaten.');
+    finish();
+  };
 }
+
   function prankTeleport(){
     const original = btn.getBoundingClientRect();
     let moves = 0; const max=18;
@@ -1031,6 +1049,29 @@ function alienContact() {
     modal.appendChild(card);
     document.body.appendChild(modal);
     card.querySelector('button').addEventListener('click', () => modal.remove());
+  }
+
+  function prankSoggySocks(){
+    const modal = document.createElement('div');
+    modal.className = 'modal soggy-socks-modal';
+    const card = document.createElement('div');
+    card.className = 'modal-card glass soggy-socks-card';
+    card.innerHTML = `
+      <h3>Soggy Socks Incident</h3>
+      <div class="soggy-sock-scene" aria-hidden="true">
+        <span class="sock left"></span>
+        <span class="sock right"></span>
+        <span class="puddle"></span>
+      </div>
+      <p class="muted">aww man i just steped in somthing and now ive got soggy socks!</p>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="pill primary" type="button">squelch away</button>
+      </div>
+    `;
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+    card.querySelector('button').addEventListener('click', () => modal.remove());
+    setTimeout(()=>modal.remove(), 8500);
   }
 
  function prankRickroll() {
