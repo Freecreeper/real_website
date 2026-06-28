@@ -1123,9 +1123,9 @@ function alienContact() {
 
   const dadJokes = [
     {setup:'Why did the button go to therapy?', punchline:'Because it felt pressed.'},
-    {setup:'Why do buttons make terrible secret agents?', punchline:'They crack under pressure.'},
+    {setup:'why did the guy name the spider in his room cotton eye joe', punchline:'cause he wanted to know where did it come from and where did it go'},
     {setup:'What did the dad say after pressing the button 10,000 times?', punchline:'I guess that was a pressing issue.'},
-    {setup:'Why did the website bring a ladder?', punchline:'Because the stats were going up.'},
+    {setup:'Why did this website bring a ladder?', punchline:'Because the stats are going up.'},
     {setup:'Why did the button refuse to fight?', punchline:'It did not want to be pushed around.'},
     {setup:'What do you call a button that tells jokes?', punchline:'A pun-ction.'},
     {setup:'Why was the leaderboard so calm?', punchline:'Because it knew everyone had their press-ure under control.'},
