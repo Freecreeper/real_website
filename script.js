@@ -788,7 +788,7 @@ if(visitorGreeting){
   // --- Pranks ---
   const pranks = [
     'fakeUpdate','goose','fakeCall','alien','potato','teleport',
-    'dvd','secretReward','stanwe','soggySocks'
+    'dvd','secretReward','stanwe','soggySocks','banReport'
   ];
   function triggerPrank(forcedChoice=null){
     state.pranks++;
@@ -899,6 +899,7 @@ if(visitorGreeting){
       case 'secretReward': prankSecretReward(); break;
       case 'stanwe': prankStanwe(); break;
       case 'soggySocks': prankSoggySocks(); break;
+      case 'banReport': prankBanReport(); break;
       case 'rickroll': prankRickroll(); break;
       default: toast('Something strange happened.');
     }
@@ -1094,6 +1095,29 @@ function alienContact() {
     document.body.appendChild(modal);
     card.querySelector('button').addEventListener('click', () => modal.remove());
     setTimeout(()=>modal.remove(), 8500);
+  }
+
+  function prankBanReport(){
+    const modal = document.createElement('div');
+    modal.className = 'modal ban-report-modal';
+    const card = document.createElement('div');
+    card.className = 'modal-card glass ban-report-card';
+    card.innerHTML = `
+      <h3>Screenshot Submitted</h3>
+      <div class="ban-report-preview" aria-hidden="true">
+        <img src="images/Screenshot_20260627-213201%20(2).png" alt="">
+      </div>
+      <p class="muted">We caught them in 4K. This is definitely enough evidence.</p>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="pill danger" type="button">GET EM BANED</button>
+      </div>
+    `;
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+    card.querySelector('button').addEventListener('click', () => {
+      modal.remove();
+      toast('Ban request denied successfully.');
+    });
   }
 
  function prankRickroll() {
