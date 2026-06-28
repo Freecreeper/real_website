@@ -369,7 +369,7 @@ body.great-divide-intro{animation:dividePagePulse 3200ms ease both}
 .secret-terminal{min-height:178px;max-height:220px;overflow:auto;padding:14px;border:1px solid rgba(124,242,255,.14);border-radius:8px;background:rgba(0,0,0,.32);color:#b9fbff;font:700 13px/1.7 ui-monospace,Consolas,monospace}
 .secret-terminal div{animation:terminalLine 260ms ease both}
 @keyframes terminalLine{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
-.secret-badge{display:inline-flex;margin-top:10px;padding:10px 12px;border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#031018;background:var(--accent);font-weight:900;text-transform:uppercase;font-size:12px}
+.secret-badge{display:inline-flex;margin-top:10px;padding:10px 12px;border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#031018;background:var(--accent);font-weight:900;text-transform:uppercase;font-size:12px;user-select:none;-webkit-user-select:none;touch-action:manipulation}
 .secret-badge.locked{background:rgba(255,255,255,.04);color:rgba(255,255,255,.48)}
 .secret-badge:not(.locked){cursor:pointer;-webkit-tap-highlight-color:transparent}
 .secret-badge:not(.locked):hover{box-shadow:0 0 24px rgba(124,242,255,.35)}
@@ -383,6 +383,17 @@ body.secret-awake .secret-core{animation:secretPulse 1200ms ease-in-out infinite
 .credits-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
 .credits-card{min-height:190px;display:flex;flex-direction:column;justify-content:space-between}
 .credits-card h2{margin:8px 0 10px;font-size:28px;letter-spacing:0;color:#fff}
+.updates-main{width:min(980px,calc(100% - 32px))}
+.update-summary-card{margin-bottom:16px;border-color:rgba(124,242,255,.24);background:linear-gradient(180deg,rgba(124,242,255,.09),rgba(255,255,255,.025))}
+.update-summary-card h2{margin:5px 0 8px;font-size:38px;letter-spacing:0;color:#fff}
+.update-tldr{margin:0;font-size:20px;line-height:1.45;color:rgba(255,255,255,.82)}
+.updates-list{display:grid;gap:14px}
+.update-card{padding:18px}
+.update-card-head{display:flex;align-items:start;justify-content:space-between;gap:12px}
+.update-card-head h2{margin:4px 0 0;font-size:26px;letter-spacing:0;color:#fff}
+.update-card-head strong{padding:6px 8px;border-radius:5px;background:rgba(124,242,255,.12);color:var(--accent);font-size:10px;text-transform:uppercase}
+.update-card-tldr{margin:12px 0;color:#fff;font-weight:800;line-height:1.45}
+.update-card ul{margin:0;padding-left:18px;color:rgba(255,255,255,.66);line-height:1.6}
 .leaderboard-card{overflow:auto}
 .leaderboard-table{width:100%;border-collapse:collapse}
 .leaderboard-table th,.leaderboard-table td{padding:13px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}

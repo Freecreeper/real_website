@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>The Button - Updates</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body class="collection-page updates-page">
+  <canvas id="particles"></canvas>
+
+  <header class="topbar">
+    <a href="index.html" class="brand">The Button</a>
+    <nav class="page-nav" aria-label="Main navigation">
+      <a href="index.html">Button</a>
+      <a href="menu.html">Menu</a>
+      <a href="updates.html" class="active" aria-current="page">Updates</a>
+      <span id="version-display"></span>
+    </nav>
+  </header>
+
+  <main class="collection-main updates-main">
+    <header class="collection-heading">
+      <div>
+        <p class="eyebrow">Patch notes</p>
+        <h1>Updates</h1>
+        <p class="muted">A quick look at what changed recently.</p>
+      </div>
+    </header>
+
+    <section class="glass update-summary-card" aria-labelledby="current-update-version">
+      <p class="eyebrow">Latest update</p>
+      <h2 id="current-update-version">Loading version...</h2>
+      <p id="current-update-tldr" class="update-tldr muted">Loading TL;DR...</p>
+    </section>
+
+    <section id="updates-list" class="updates-list" aria-label="Update history"></section>
+  </main>
+
+  <footer class="footer">
+    <span class="creator-credit">Made by Zane</span>
+  </footer>
+
+  <script src="version-egg.js"></script>
+  <script src="updates.js"></script>
+  <script src="page-effects.js"></script>
+</body>
+</html>

@@ -112,5 +112,15 @@
   if(window.setupVersionEgg) window.setupVersionEgg();
   if(activate) activate.addEventListener('click', runSequence);
   if(core) core.addEventListener('click', handleCoreTap);
-  if(badge) badge.addEventListener('click', handleFounderSignalTap);
+  if(badge){
+    badge.setAttribute('role', 'button');
+    badge.setAttribute('tabindex', '0');
+    badge.addEventListener('click', handleFounderSignalTap);
+    badge.addEventListener('keydown', event => {
+      if(event.key === 'Enter' || event.key === ' '){
+        event.preventDefault();
+        handleFounderSignalTap();
+      }
+    });
+  }
 })();
