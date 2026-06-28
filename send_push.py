@@ -1,4 +1,5 @@
 import argparse
+import base64
 import json
 import os
 import sqlite3
@@ -27,6 +28,40 @@ VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
 VAPID_SUBJECT = os.environ.get("VAPID_SUBJECT", "mailto:admin@pressthebutton.click")
 
 
+def base64url_decode(value):
+    compact = "".join(str(value or "").strip().split())
+    padding = "=" * ((4 - len(compact) % 4) % 4)
+    return base64.urlsafe_b64decode((compact + padding).encode("ascii"))
+
+
+def base64url_encode(value):
+    return base64.urlsafe_b64encode(value).decode("ascii").rstrip("=")
+
+
+def webpush_vapid_private_key(value):
+    value = str(value or "").strip()
+    if not value:
+        return ""
+
+    try:
+        raw = base64url_decode(value)
+        if len(raw) == 32:
+            return value.rstrip("=")
+    except Exception:
+        pass
+
+    if "BEGIN PRIVATE KEY" in value:
+        try:
+            from cryptography.hazmat.primitives.serialization import load_pem_private_key
+            private_key = load_pem_private_key(value.encode("utf-8"), password=None)
+            private_value = private_key.private_numbers().private_value
+            return base64url_encode(private_value.to_bytes(32, "big"))
+        except Exception:
+            return ""
+
+    return value
+
+
 def connect():
     conn = sqlite3.connect(DB_FILE, timeout=30)
     conn.row_factory = sqlite3.Row
@@ -49,6 +84,11 @@ def init_db():
         )
 
 
+def delete_push_subscription(endpoint):
+    with connect() as conn:
+        conn.execute("DELETE FROM push_subscriptions WHERE endpoint = ?", (endpoint,))
+
+
 def main():
     try:
         from pywebpush import WebPushException, webpush
@@ -62,7 +102,8 @@ def main():
     parser.add_argument("--tag", default="the-button-chaos")
     args = parser.parse_args()
 
-    if not VAPID_PRIVATE_KEY:
+    vapid_private_key = webpush_vapid_private_key(VAPID_PRIVATE_KEY)
+    if not vapid_private_key:
         raise SystemExit("VAPID_PRIVATE_KEY is not set")
     init_db()
 
@@ -88,11 +129,21 @@ def main():
             webpush(
                 subscription_info=subscription,
                 data=payload,
-                vapid_private_key=VAPID_PRIVATE_KEY,
+                vapid_private_key=vapid_private_key,
                 vapid_claims={"sub": VAPID_SUBJECT},
             )
             sent += 1
-        except (json.JSONDecodeError, WebPushException) as error:
+        except json.JSONDecodeError as error:
+            delete_push_subscription(row["endpoint"])
+            failed += 1
+            print(f"Failed {row['endpoint']}: {error}")
+        except WebPushException as error:
+            failed += 1
+            if "410" in str(error) or "404" in str(error):
+                delete_push_subscription(row["endpoint"])
+                print(f"Removed expired subscription: {row['endpoint']}")
+            print(f"Failed {row['endpoint']}: {error}")
+        except Exception as error:
             failed += 1
             print(f"Failed {row['endpoint']}: {error}")
 

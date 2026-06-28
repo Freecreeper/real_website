@@ -1,6 +1,7 @@
 import argparse
 import os
 import sqlite3
+import sys
 from datetime import datetime, timezone
 
 
@@ -82,6 +83,10 @@ def list_bans():
 
 
 def main():
+    if len(sys.argv) in (2, 3) and sys.argv[1] not in {"ban", "unban", "list", "-h", "--help"}:
+        ban(sys.argv[1], sys.argv[2] if len(sys.argv) == 3 else "")
+        return
+
     parser = argparse.ArgumentParser(description="Ban or unban The Button player names.")
     sub = parser.add_subparsers(dest="command", required=True)
 

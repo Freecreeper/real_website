@@ -796,8 +796,25 @@ if(visitorGreeting){
     if(mapping[choice]) postEvent(mapping[choice], 1);
   }
 
+  let pendingGlobalPresses = 0;
+  let globalPressFlushTimer = null;
+  let globalPressInFlight = false;
+
   // update global presses stored in localStorage
   function updateGlobalPresses(delta=1){
+    pendingGlobalPresses += delta;
+    if(!globalPressFlushTimer){
+      globalPressFlushTimer = setTimeout(flushGlobalPresses, 250);
+    }
+  }
+
+  function flushGlobalPresses(){
+    globalPressFlushTimer = null;
+    if(globalPressInFlight || pendingGlobalPresses <= 0) return;
+    const delta = Math.min(100, pendingGlobalPresses);
+    pendingGlobalPresses -= delta;
+    globalPressInFlight = true;
+
     // attempt to post to server; fallback to localStorage
     postPress(delta).then(data=>{
       if(typeof data.player_presses !== 'undefined'){
@@ -847,6 +864,11 @@ if(visitorGreeting){
       }catch(e){console.warn('global update err',e)}
       bumpDailyGoalFallback(delta);
       renderDailyGoal();
+    }).finally(()=>{
+      globalPressInFlight = false;
+      if(pendingGlobalPresses > 0 && !globalPressFlushTimer){
+        globalPressFlushTimer = setTimeout(flushGlobalPresses, 100);
+      }
     });
   }
   if ('ongesturestart' in window) {
