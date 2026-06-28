@@ -788,7 +788,7 @@ if(visitorGreeting){
   // --- Pranks ---
   const pranks = [
     'fakeUpdate','goose','fakeCall','alien','potato','teleport',
-    'dvd','secretReward','stanwe','soggySocks','banReport'
+    'dvd','secretReward','stanwe','soggySocks','banReport','dadJoke'
   ];
   function triggerPrank(forcedChoice=null){
     state.pranks++;
@@ -900,6 +900,7 @@ if(visitorGreeting){
       case 'stanwe': prankStanwe(); break;
       case 'soggySocks': prankSoggySocks(); break;
       case 'banReport': prankBanReport(); break;
+      case 'dadJoke': prankDadJoke(); break;
       case 'rickroll': prankRickroll(); break;
       default: toast('Something strange happened.');
     }
@@ -1117,6 +1118,48 @@ function alienContact() {
     card.querySelector('button').addEventListener('click', () => {
       modal.remove();
       toast('Ban request denied successfully.');
+    });
+  }
+
+  const dadJokes = [
+    {setup:'Why did the button go to therapy?', punchline:'Because it felt pressed.'},
+    {setup:'Why do buttons make terrible secret agents?', punchline:'They crack under pressure.'},
+    {setup:'What did the dad say after pressing the button 10,000 times?', punchline:'I guess that was a pressing issue.'},
+    {setup:'Why did the website bring a ladder?', punchline:'Because the stats were going up.'},
+    {setup:'Why did the button refuse to fight?', punchline:'It did not want to be pushed around.'},
+    {setup:'What do you call a button that tells jokes?', punchline:'A pun-ction.'},
+    {setup:'Why was the leaderboard so calm?', punchline:'Because it knew everyone had their press-ure under control.'},
+    {setup:'Why did the button blush?', punchline:'Because everyone kept pressing it.'},
+    {setup:'What did one click say to the other?', punchline:'See you around the counter.'},
+    {setup:'Why did the dad install notifications?', punchline:'So he could keep up with current events.'}
+  ];
+
+  function prankDadJoke(){
+    const joke = dadJokes[rand(0, dadJokes.length - 1)];
+    const modal = document.createElement('div');
+    modal.className = 'modal dad-joke-modal';
+    const card = document.createElement('div');
+    card.className = 'modal-card glass dad-joke-card';
+    card.innerHTML = `
+      <h3>Emergency Dad Joke</h3>
+      <p class="dad-joke-text">${joke.setup}</p>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="pill primary" type="button">what</button>
+      </div>
+    `;
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+    const button = card.querySelector('button');
+    button.addEventListener('click', () => {
+      const text = card.querySelector('.dad-joke-text');
+      if(button.dataset.revealed === 'true'){
+        modal.remove();
+        return;
+      }
+      button.dataset.revealed = 'true';
+      text.textContent = joke.punchline;
+      card.classList.add('revealed');
+      button.textContent = 'ok dad';
     });
   }
 
