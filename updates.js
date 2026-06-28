@@ -6,6 +6,20 @@
   */
   const UPDATES = [
     {
+      version:'2.17.4',
+      date:'June 28, 2026',
+      tldr:'Fixed the secret Founder Signal credits tap.',
+      highlights:[
+        'Founder Signal taps now register more reliably.',
+        'The secret stays unlocked after you come back to the page.'
+      ],
+      details:[
+        'The Founder Signal credits shortcut no longer depends on tapping 20 times inside a tiny hidden time window.',
+        'Mobile taps now use a more reliable tap handler, so tapping the badge should count instead of doing nothing.',
+        'If you already unlocked the Founder Signal before, the Easter egg page remembers it and keeps the secret badge active.'
+      ]
+    },
+    {
       version:'2.17.3',
       date:'June 28, 2026',
       tldr:'Updates are easier to read now, with click-to-open full rundowns.',

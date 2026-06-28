@@ -6,9 +6,9 @@
   const core = qs('#secret-core');
   const badge = qs('#secret-badge');
   const CREDITS_TAP_TARGET = 20;
-  const CREDITS_TAP_WINDOW_MS = 9000;
   let coreTaps = 0;
-  let founderSignalTaps = [];
+  let founderSignalTaps = 0;
+  let lastFounderTap = 0;
   let sequenceRunning = false;
 
   function loadState(){
@@ -63,6 +63,16 @@
     }
   }
 
+  function unlockFounderSignal(){
+    if(badge){
+      badge.textContent = 'Founder Signal unlocked';
+      badge.classList.remove('locked');
+      badge.setAttribute('aria-label', 'Founder Signal unlocked. Tap 20 times to open the credits.');
+    }
+    document.body.classList.add('secret-awake');
+    try{ localStorage.setItem('thebutton:founder-signal', '1'); }catch(error){}
+  }
+
   async function runSequence(){
     if(sequenceRunning) return;
     sequenceRunning = true;
@@ -73,13 +83,8 @@
     await addLine('press energy accepted', 600);
     await addLine('zane protocol online', 700);
     await addLine('message: thank you for playing', 650);
-    if(badge){
-      badge.textContent = 'Founder Signal unlocked';
-      badge.classList.remove('locked');
-    }
-    document.body.classList.add('secret-awake');
+    unlockFounderSignal();
     burst();
-    try{ localStorage.setItem('thebutton:founder-signal', '1'); }catch(error){}
     if(activate) activate.textContent = 'Signal Active';
   }
 
@@ -91,31 +96,46 @@
 
   function handleFounderSignalTap(){
     if(!badge || badge.classList.contains('locked')) return;
-    const now = Date.now();
-    founderSignalTaps = founderSignalTaps
-      .filter(tapTime => now - tapTime <= CREDITS_TAP_WINDOW_MS)
-      .concat(now);
-
-    const remaining = CREDITS_TAP_TARGET - founderSignalTaps.length;
-    if(remaining > 0 && remaining <= 5){
+    founderSignalTaps++;
+    const remaining = CREDITS_TAP_TARGET - founderSignalTaps;
+    if(remaining > 0){
       badge.textContent = `${remaining} taps until credits`;
       setTimeout(() => {
         if(badge && !badge.classList.contains('locked')) badge.textContent = 'Founder Signal unlocked';
-      }, 800);
+      }, 650);
     }
-    if(founderSignalTaps.length >= CREDITS_TAP_TARGET){
+    if(founderSignalTaps >= CREDITS_TAP_TARGET){
       window.location.href = 'credits.html';
     }
   }
 
+  function handleFounderSignalPointer(event){
+    if(event) event.preventDefault();
+    lastFounderTap = Date.now();
+    handleFounderSignalTap();
+  }
+
+  function handleFounderSignalClick(event){
+    if(Date.now() - lastFounderTap < 450) return;
+    if(event) event.preventDefault();
+    handleFounderSignalTap();
+  }
+
   renderStats();
+  try{
+    if(localStorage.getItem('thebutton:founder-signal') === '1'){
+      unlockFounderSignal();
+      if(activate) activate.textContent = 'Signal Active';
+    }
+  }catch(error){}
   if(window.setupVersionEgg) window.setupVersionEgg();
   if(activate) activate.addEventListener('click', runSequence);
   if(core) core.addEventListener('click', handleCoreTap);
   if(badge){
     badge.setAttribute('role', 'button');
     badge.setAttribute('tabindex', '0');
-    badge.addEventListener('click', handleFounderSignalTap);
+    badge.addEventListener('pointerdown', handleFounderSignalPointer);
+    badge.addEventListener('click', handleFounderSignalClick);
     badge.addEventListener('keydown', event => {
       if(event.key === 'Enter' || event.key === ' '){
         event.preventDefault();
