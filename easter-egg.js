@@ -5,7 +5,10 @@
   const activate = qs('#activate-secret');
   const core = qs('#secret-core');
   const badge = qs('#secret-badge');
+  const CREDITS_TAP_TARGET = 20;
+  const CREDITS_TAP_WINDOW_MS = 9000;
   let coreTaps = 0;
+  let founderSignalTaps = [];
   let sequenceRunning = false;
 
   function loadState(){
@@ -86,8 +89,28 @@
     if(coreTaps >= 7) runSequence();
   }
 
+  function handleFounderSignalTap(){
+    if(!badge || badge.classList.contains('locked')) return;
+    const now = Date.now();
+    founderSignalTaps = founderSignalTaps
+      .filter(tapTime => now - tapTime <= CREDITS_TAP_WINDOW_MS)
+      .concat(now);
+
+    const remaining = CREDITS_TAP_TARGET - founderSignalTaps.length;
+    if(remaining > 0 && remaining <= 5){
+      badge.textContent = `${remaining} taps until credits`;
+      setTimeout(() => {
+        if(badge && !badge.classList.contains('locked')) badge.textContent = 'Founder Signal unlocked';
+      }, 800);
+    }
+    if(founderSignalTaps.length >= CREDITS_TAP_TARGET){
+      window.location.href = 'credits.html';
+    }
+  }
+
   renderStats();
   if(window.setupVersionEgg) window.setupVersionEgg();
   if(activate) activate.addEventListener('click', runSequence);
   if(core) core.addEventListener('click', handleCoreTap);
+  if(badge) badge.addEventListener('click', handleFounderSignalTap);
 })();

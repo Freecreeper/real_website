@@ -371,10 +371,18 @@ body.great-divide-intro{animation:dividePagePulse 3200ms ease both}
 @keyframes terminalLine{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 .secret-badge{display:inline-flex;margin-top:10px;padding:10px 12px;border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#031018;background:var(--accent);font-weight:900;text-transform:uppercase;font-size:12px}
 .secret-badge.locked{background:rgba(255,255,255,.04);color:rgba(255,255,255,.48)}
+.secret-badge:not(.locked){cursor:pointer;-webkit-tap-highlight-color:transparent}
+.secret-badge:not(.locked):hover{box-shadow:0 0 24px rgba(124,242,255,.35)}
 body.secret-awake .secret-core{animation:secretPulse 1200ms ease-in-out infinite}
 @keyframes secretPulse{50%{transform:scale(1.04);box-shadow:0 0 68px rgba(124,242,255,.76),0 24px 90px rgba(0,0,0,.45),inset 0 -8px 22px rgba(0,0,0,.28)}}
 .secret-spark{position:fixed;z-index:180;width:8px;height:8px;border-radius:50%;pointer-events:none;background:var(--accent);box-shadow:0 0 18px var(--accent);animation:secretBurst 1300ms ease-out forwards}
 @keyframes secretBurst{to{opacity:0;transform:translate(var(--tx),var(--ty)) scale(.3)}}
+.credits-main{position:relative;z-index:1;width:min(960px,calc(100% - 32px));margin:0 auto;padding:112px 0 88px}
+.credits-hero{margin-bottom:16px;text-align:left}
+.credits-hero h1{margin:6px 0 10px;font-size:52px;letter-spacing:0}
+.credits-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.credits-card{min-height:190px;display:flex;flex-direction:column;justify-content:space-between}
+.credits-card h2{margin:8px 0 10px;font-size:28px;letter-spacing:0;color:#fff}
 .leaderboard-card{overflow:auto}
 .leaderboard-table{width:100%;border-collapse:collapse}
 .leaderboard-table th,.leaderboard-table td{padding:13px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
@@ -407,7 +415,7 @@ body.secret-awake .secret-core{animation:secretPulse 1200ms ease-in-out infinite
   .profile-main{padding-top:132px}
   .profile-grid{grid-template-columns:1fr}
   .profile-name{align-items:start;flex-direction:column}
-  .stat-grid,.skin-grid,.menu-grid,.settings-grid{grid-template-columns:1fr}
+  .stat-grid,.skin-grid,.menu-grid,.settings-grid,.credits-list{grid-template-columns:1fr}
   .milestone-columns{grid-template-columns:1fr}
   .divide-mvp-grid{grid-template-columns:1fr}
   .easter-hero,.secret-grid{grid-template-columns:1fr}
