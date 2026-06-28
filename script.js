@@ -1122,16 +1122,24 @@ function alienContact() {
   }
 
   const dadJokes = [
-    {setup:'Why did the button go to therapy?', punchline:'Because it felt pressed.'},
-    {setup:'why did the guy name the spider in his room cotton eye joe', punchline:'cause he wanted to know where did it come from and where did it go'},
-    {setup:'What did the dad say after pressing the button 10,000 times?', punchline:'I guess that was a pressing issue.'},
-    {setup:'Why did this website bring a ladder?', punchline:'Because the stats are going up.'},
-    {setup:'Why did the button refuse to fight?', punchline:'It did not want to be pushed around.'},
-    {setup:'What do you call a button that tells jokes?', punchline:'A pun-ction.'},
-    {setup:'Why was the leaderboard so calm?', punchline:'Because it knew everyone had their press-ure under control.'},
-    {setup:'Why did the button blush?', punchline:'Because everyone kept pressing it.'},
-    {setup:'What did one click say to the other?', punchline:'See you around the counter.'},
-    {setup:'Why did the dad install notifications?', punchline:'So he could keep up with current events.'}
+    {setup:'I only know 25 letters of the alphabet.', punchline:'I do not know y.'},
+    {setup:'Why did the scarecrow win an award?', punchline:'Because he was outstanding in his field.'},
+    {setup:'Why do dads take an extra pair of socks golfing?', punchline:'In case they get a hole in one.'},
+    {setup:'Why did the invisible man turn down the job offer?', punchline:'He could not see himself doing it.'},
+    {setup:'What do you call fake spaghetti?', punchline:'An impasta.'},
+    {setup:'Why did the coffee file a police report?', punchline:'It got mugged.'},
+    {setup:'I used to hate facial hair.', punchline:'But then it grew on me.'},
+    {setup:'Why did the guy name the spider in his room Cotton Eye Joe?', punchline:'Because he wanted to know where did it come from and where did it go.'},
+    {setup:'Why do programmers prefer dark mode?', punchline:'Because light attracts bugs.'},
+    {setup:'Why did the developer go broke?', punchline:'Because he used up all his cache.'},
+    {setup:'Why do Java developers wear glasses?', punchline:'Because they do not C#.'},
+    {setup:'How many programmers does it take to change a light bulb?', punchline:'None. That is a hardware problem.'},
+    {setup:'Why was the JavaScript developer sad?', punchline:'Because he did not know how to null his feelings.'},
+    {setup:'Why did the computer show up late to work?', punchline:'It had a hard drive.'},
+    {setup:'Why did the website go to therapy?', punchline:'It had too many unresolved issues.'},
+    {setup:'Why did the button look so stressed?', punchline:'It was under a lot of press-ure.'},
+    {setup:'What did one click say to the other?', punchline:'I think we are being counted.'},
+    {setup:'Why did the leaderboard need a nap?', punchline:'It was tired of everyone trying to get on top.'}
   ];
 
   function prankDadJoke(){
