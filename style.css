@@ -388,12 +388,17 @@ body.secret-awake .secret-core{animation:secretPulse 1200ms ease-in-out infinite
 .update-summary-card h2{margin:5px 0 8px;font-size:38px;letter-spacing:0;color:#fff}
 .update-tldr{margin:0;font-size:20px;line-height:1.45;color:rgba(255,255,255,.82)}
 .updates-list{display:grid;gap:14px}
-.update-card{padding:18px}
-.update-card-head{display:flex;align-items:start;justify-content:space-between;gap:12px}
-.update-card-head h2{margin:4px 0 0;font-size:26px;letter-spacing:0;color:#fff}
-.update-card-head strong{padding:6px 8px;border-radius:5px;background:rgba(124,242,255,.12);color:var(--accent);font-size:10px;text-transform:uppercase}
-.update-card-tldr{margin:12px 0;color:#fff;font-weight:800;line-height:1.45}
-.update-card ul{margin:0;padding-left:18px;color:rgba(255,255,255,.66);line-height:1.6}
+.update-card{padding:0;overflow:hidden}
+.update-card-button{width:100%;padding:18px;border:0;background:transparent;color:inherit;display:flex;align-items:center;justify-content:space-between;gap:14px;text-align:left;font:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.update-card-button:hover{background:rgba(124,242,255,.055)}
+.update-card-button strong{display:block;margin:5px 0 7px;font-size:26px;letter-spacing:0;color:#fff}
+.update-card-tldr{display:block;color:#fff;font-weight:800;line-height:1.45}
+.update-open-label{flex:0 0 auto;padding:7px 9px;border-radius:5px;background:rgba(124,242,255,.12);color:var(--accent);font-size:10px;font-weight:900;text-transform:uppercase}
+.update-card.open .update-open-label{background:rgba(255,255,255,.1);color:#fff}
+.update-details{padding:0 18px 18px;border-top:1px solid rgba(255,255,255,.08)}
+.update-detail-grid{display:grid;grid-template-columns:.8fr 1.2fr;gap:16px;padding-top:16px}
+.update-details h3{margin:0 0 8px;color:rgba(255,255,255,.78);font-size:12px;text-transform:uppercase}
+.update-details ul{margin:0;padding-left:18px;color:rgba(255,255,255,.66);line-height:1.6}
 .leaderboard-card{overflow:auto}
 .leaderboard-table{width:100%;border-collapse:collapse}
 .leaderboard-table th,.leaderboard-table td{padding:13px 10px;border-bottom:1px solid rgba(255,255,255,.08);text-align:left}
@@ -427,7 +432,7 @@ body.secret-awake .secret-core{animation:secretPulse 1200ms ease-in-out infinite
   .profile-grid{grid-template-columns:1fr}
   .profile-name{align-items:start;flex-direction:column}
   .stat-grid,.skin-grid,.menu-grid,.settings-grid,.credits-list{grid-template-columns:1fr}
-  .milestone-columns{grid-template-columns:1fr}
+  .milestone-columns,.update-detail-grid{grid-template-columns:1fr}
   .divide-mvp-grid{grid-template-columns:1fr}
   .easter-hero,.secret-grid{grid-template-columns:1fr}
   .secret-orbit{min-height:280px}
