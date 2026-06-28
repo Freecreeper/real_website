@@ -6,6 +6,22 @@
   */
   const UPDATES = [
     {
+      version:'2.17.5',
+      date:'June 28, 2026',
+      tldr:'The Great Divide is now a real 14-day season.',
+      highlights:[
+        'Great Divide runs for 14 days after it starts.',
+        'Team rewards now happen when the season ends.',
+        'MVP titles are awarded to the top Red and Blue players.'
+      ],
+      details:[
+        'The Great Divide no longer lasts forever. Once the community reaches 50,000 global presses, the season runs for 14 days.',
+        'Presses only count toward Red or Blue while the season is active.',
+        'When the season ends, the winning team receives its champion skin. If the season ends in a tie, no champion skin is awarded.',
+        'The top Red player and top Blue player receive their MVP titles when the season closes.'
+      ]
+    },
+    {
       version:'2.17.4',
       date:'June 28, 2026',
       tldr:'Fixed the secret Founder Signal credits tap.',

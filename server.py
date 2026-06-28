@@ -50,6 +50,7 @@ STANDARD_ACHIEVEMENT_MILESTONES = (10, 25, 50, 100, 500, 1000)
 WORLD_FIRST_INTERVAL = 5000
 DAILY_GOAL_TARGET = 1000
 GLOBAL_EVENT_WARNING_DISTANCES = (5000, 1000, 500, 100)
+DIVIDE_SEASON_HOURS = 14 * 24
 KNOWN_WORLD_FIRST_CLAIMS = {
     5000: "Tuh Mator",
     10000: "Ezra",
@@ -122,8 +123,8 @@ GLOBAL_MILESTONE_DEFS = [
         "icon": "Divide",
         "title": "The Great Divide",
         "event": "Choose Red or Blue for the season.",
-        "active_hours": None,
-        "effects": ["The screen splits", "Every press helps your team", "Season-long team choice", "Live Red vs Blue scoreboard"],
+        "active_hours": DIVIDE_SEASON_HOURS,
+        "effects": ["The screen splits", "Every press helps your team", "14-day team season", "Live Red vs Blue scoreboard"],
         "rewards": ["Winning team gets an exclusive champion skin when the season closes", "Top Red and Blue players become MVPs"],
     },
     {
@@ -980,13 +981,112 @@ def normalize_divide_unlock(unlock):
 
     unlock["teams"] = teams
     unlock["season"] = int(unlock.get("season", 1) or 1)
+    if unlock.get("unlocked_at") and not unlock.get("active_until"):
+        try:
+            unlocked_at = datetime.fromisoformat(unlock["unlocked_at"])
+            unlock["active_until"] = (unlocked_at + timedelta(hours=DIVIDE_SEASON_HOURS)).isoformat()
+        except (TypeError, ValueError):
+            pass
     return unlock
+
+
+def divide_active_until(unlock):
+    if not unlock or not unlock.get("unlocked_at"):
+        return None
+    try:
+        unlocked_at = datetime.fromisoformat(unlock["unlocked_at"])
+    except (TypeError, ValueError):
+        return None
+    return unlocked_at + timedelta(hours=DIVIDE_SEASON_HOURS)
+
+
+def divide_winning_team(unlock):
+    unlock = normalize_divide_unlock(unlock)
+    red = int(unlock["teams"]["red"].get("presses", 0) or 0)
+    blue = int(unlock["teams"]["blue"].get("presses", 0) or 0)
+    if red > blue:
+        return "red"
+    if blue > red:
+        return "blue"
+    return "tie"
+
+
+def divide_team_mvps(leaderboard):
+    mvps = {}
+    for team in DIVIDE_TEAMS:
+        contenders = [
+            (player_name, player)
+            for player_name, player in public_leaderboard(leaderboard).items()
+            if player.get("divide_team") == team
+        ]
+        if contenders:
+            player_name, player = max(
+                contenders,
+                key=lambda item: int(item[1].get("divide_presses", 0) or 0),
+            )
+            mvps[team] = {
+                "name": player_name,
+                "presses": int(player.get("divide_presses", 0) or 0),
+                "title": DIVIDE_TEAMS[team]["title"],
+            }
+        else:
+            mvps[team] = None
+    return mvps
+
+
+def settle_divide_season_if_needed(unlocks=None, leaderboard=None):
+    unlocks = unlocks if unlocks is not None else load_global_milestone_unlocks()
+    unlock = unlocks.get("divide")
+    if not unlock or unlock.get("ended_at"):
+        return unlocks, leaderboard, False, False
+
+    unlock = normalize_divide_unlock(unlock)
+    unlocks["divide"] = unlock
+    active_until = divide_active_until(unlock)
+    if not active_until or datetime.now(timezone.utc) < active_until:
+        return unlocks, leaderboard, False, False
+
+    if leaderboard is None:
+        leaderboard = load_leaderboard()
+
+    season = int(unlock.get("season", 1) or 1)
+    winner = divide_winning_team(unlock)
+    mvps = divide_team_mvps(leaderboard)
+    unlock["ended_at"] = active_until.isoformat()
+    unlock["active_until"] = active_until.isoformat()
+    unlock["winner"] = winner
+
+    leaderboard_changed = False
+    if winner in DIVIDE_TEAMS:
+        champion_skin = DIVIDE_TEAMS[winner]["skin"]
+        for player in leaderboard.values():
+            if player.get("divide_team") == winner and int(player.get("divide_season", season) or season) == season:
+                skins = player.setdefault("skins", [])
+                if champion_skin not in skins:
+                    skins.append(champion_skin)
+                    leaderboard_changed = True
+
+    for team, mvp in mvps.items():
+        if not mvp:
+            continue
+        player = leaderboard.get(mvp["name"])
+        if player and player.get("title") != DIVIDE_TEAMS[team]["title"]:
+            player["title"] = DIVIDE_TEAMS[team]["title"]
+            leaderboard_changed = True
+
+    save_global_milestone_unlocks(unlocks)
+    if leaderboard_changed:
+        save_leaderboard(leaderboard)
+    return unlocks, leaderboard, True, leaderboard_changed
 
 
 def divide_is_active(unlocks=None):
     unlocks = unlocks if unlocks is not None else load_global_milestone_unlocks()
     unlock = unlocks.get("divide")
-    return bool(unlock and not unlock.get("ended_at"))
+    if not unlock or unlock.get("ended_at"):
+        return False
+    active_until = divide_active_until(unlock)
+    return bool(active_until and datetime.now(timezone.utc) < active_until)
 
 
 def divide_player_payload(name, leaderboard=None, unlocks=None):
@@ -1031,25 +1131,7 @@ def divide_state_payload(name=None, leaderboard=None, unlocks=None):
         }
 
     leaderboard = public_leaderboard(leaderboard if leaderboard is not None else load_leaderboard())
-    mvps = {}
-    for team in DIVIDE_TEAMS:
-        contenders = [
-            (player_name, player)
-            for player_name, player in leaderboard.items()
-            if player.get("divide_team") == team
-        ]
-        if contenders:
-            player_name, player = max(
-                contenders,
-                key=lambda item: int(item[1].get("divide_presses", 0) or 0),
-            )
-            mvps[team] = {
-                "name": player_name,
-                "presses": int(player.get("divide_presses", 0) or 0),
-                "title": DIVIDE_TEAMS[team]["title"],
-            }
-        else:
-            mvps[team] = None
+    mvps = divide_team_mvps(leaderboard)
 
     red = team_payload["red"]["presses"]
     blue = team_payload["blue"]["presses"]
@@ -1063,7 +1145,9 @@ def divide_state_payload(name=None, leaderboard=None, unlocks=None):
         "active": active,
         "season": int(unlock.get("season", 1) if unlock else 1),
         "unlocked_at": unlock.get("unlocked_at") if unlock else None,
+        "active_until": unlock.get("active_until") if unlock else None,
         "ended_at": unlock.get("ended_at") if unlock else None,
+        "winner": unlock.get("winner") if unlock else None,
         "teams": team_payload,
         "leader": leader,
         "mvps": mvps,
@@ -1078,6 +1162,7 @@ def choose_divide_team(name, team):
         return None, "invalid team"
 
     unlocks = load_global_milestone_unlocks()
+    unlocks, _, _, _ = settle_divide_season_if_needed(unlocks)
     if not divide_is_active(unlocks):
         return None, "divide is not active"
 
@@ -1101,13 +1186,9 @@ def choose_divide_team(name, team):
     player["divide_season"] = unlocks["divide"].get("season", 1)
     player["divide_presses"] = int(player.get("divide_presses", 0) or 0)
     player.setdefault("skins", [])
-    reward_skin = DIVIDE_TEAMS[team]["skin"]
-    if reward_skin not in player["skins"]:
-        player["skins"].append(reward_skin)
     save_leaderboard(leaderboard)
     save_global_milestone_unlocks(unlocks)
     payload = divide_state_payload(name, leaderboard, unlocks)
-    payload["reward_skin"] = reward_skin
     return payload, None
 
 
@@ -1179,6 +1260,7 @@ def global_event_warning_notifications(previous_presses, total_presses, unlocks)
 
 def serialize_global_milestones(total_presses):
     unlocks = load_global_milestone_unlocks()
+    unlocks, _, _, _ = settle_divide_season_if_needed(unlocks)
     changed = False
     now = datetime.now(timezone.utc)
 
@@ -1203,12 +1285,12 @@ def serialize_global_milestones(total_presses):
                 item["divide"] = divide_state_payload(unlocks=unlocks)
             unlocked_at = datetime.fromisoformat(unlock["unlocked_at"])
             item["unlocked_at"] = unlock["unlocked_at"]
-            if milestone["id"] == "divide" and not unlock.get("ended_at"):
-                item["status"] = "active"
-            elif milestone["active_hours"]:
+            if milestone["active_hours"]:
                 active_until = unlocked_at + timedelta(hours=milestone["active_hours"])
                 item["active_until"] = active_until.isoformat()
                 item["status"] = "active" if now < active_until else "unlocked"
+                if milestone["id"] == "divide" and unlock.get("ended_at"):
+                    item["status"] = "unlocked"
             else:
                 item["status"] = "unlocked"
         serialized.append(item)
@@ -1441,6 +1523,7 @@ def press():
         )
         if warnings_changed:
             save_global_milestone_unlocks(milestone_unlocks)
+        milestone_unlocks, leaderboard, _, _ = settle_divide_season_if_needed(milestone_unlocks, leaderboard)
         divide_team = record_divide_press(player, milestone_unlocks, added_presses)
         if divide_team:
             save_global_milestone_unlocks(milestone_unlocks)
@@ -1584,6 +1667,7 @@ def global_milestones():
 def divide_state():
     name = clean_player_name(request.args.get("name", "")).strip()
     with storage_lock:
+        settle_divide_season_if_needed()
         payload = divide_state_payload(name or None)
     return jsonify(payload)
 
@@ -1648,9 +1732,10 @@ def admin_unban():
 
 @app.get("/api/leaderboard")
 def leaderboard():
-
-    data = public_leaderboard()
-    divide = divide_state_payload(leaderboard=data)
+    with storage_lock:
+        _, leaderboard_data, _, _ = settle_divide_season_if_needed()
+        data = public_leaderboard(leaderboard_data if leaderboard_data is not None else load_leaderboard())
+        divide = divide_state_payload(leaderboard=data)
     mvp_titles = {}
     for team, mvp in divide.get("mvps", {}).items():
         if mvp:

@@ -29,9 +29,9 @@
       title:'The Great Divide',
       event:'Choose Red or Blue for the season.',
       status:'locked',
-      active_hours:null,
-      effects:['The screen splits', 'Every press helps your team', 'Season-long team choice'],
-      rewards:['Winning team gets an exclusive champion skin', 'MVPs get a special title']
+      active_hours:336,
+      effects:['The screen splits', 'Every press helps your team', '14-day team season', 'Live Red vs Blue scoreboard'],
+      rewards:['Winning team gets an exclusive champion skin when the season closes', 'Top Red and Blue players become MVPs']
     },
     {
       id:'alien',
