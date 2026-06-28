@@ -49,6 +49,7 @@ storage_lock = Lock()
 STANDARD_ACHIEVEMENT_MILESTONES = (10, 25, 50, 100, 500, 1000)
 WORLD_FIRST_INTERVAL = 5000
 DAILY_GOAL_TARGET = 1000
+GLOBAL_EVENT_WARNING_DISTANCES = (5000, 1000, 500, 100)
 KNOWN_WORLD_FIRST_CLAIMS = {
     5000: "Tuh Mator",
     10000: "Ezra",
@@ -1139,6 +1140,39 @@ def update_global_milestone_unlocks(previous_presses, total_presses):
     return unlocks, new_unlocks
 
 
+def global_event_warning_notifications(previous_presses, total_presses, unlocks):
+    notifications = []
+    now = datetime.now(timezone.utc).isoformat()
+    changed = False
+
+    for milestone in GLOBAL_MILESTONE_DEFS:
+        milestone_id = milestone["id"]
+        if milestone_id in unlocks:
+            continue
+
+        threshold = int(milestone["threshold"])
+        for distance in GLOBAL_EVENT_WARNING_DISTANCES:
+            warning_at = threshold - distance
+            warning_id = f"warning:{milestone_id}:{distance}"
+            if warning_at <= 0 or warning_id in unlocks:
+                continue
+            if previous_presses < warning_at <= total_presses < threshold:
+                notifications.append({
+                    "title": f"{distance:,} PRESSES TILL THE {milestone['title'].upper()} EVENT",
+                    "body": f"{milestone['event']} The Button is at {total_presses:,}/{threshold:,} presses.",
+                    "tag": f"event-warning-{milestone_id}-{distance}",
+                })
+                unlocks[warning_id] = {
+                    "sent_at": now,
+                    "milestone_id": milestone_id,
+                    "distance": distance,
+                    "total_presses": int(total_presses),
+                }
+                changed = True
+
+    return notifications, changed
+
+
 def serialize_global_milestones(total_presses):
     unlocks = load_global_milestone_unlocks()
     changed = False
@@ -1354,6 +1388,7 @@ def press():
     divide_state = None
     podium_notifications = []
     first_place_notification = None
+    event_warning_notifications = []
     with storage_lock:
         stats = repair_total_presses(load_stats())
         previous_total_presses = int(stats.get("total_presses", 0))
@@ -1391,11 +1426,17 @@ def press():
         daily_goal = load_daily_goal()
         daily_goal["presses"] = daily_goal.get("presses", 0) + added_presses
         save_daily_goal(daily_goal)
-        _, new_global_milestones = update_global_milestone_unlocks(
+        milestone_unlocks, new_global_milestones = update_global_milestone_unlocks(
             previous_total_presses,
             stats["total_presses"]
         )
-        milestone_unlocks = load_global_milestone_unlocks()
+        event_warning_notifications, warnings_changed = global_event_warning_notifications(
+            previous_total_presses,
+            stats["total_presses"],
+            milestone_unlocks,
+        )
+        if warnings_changed:
+            save_global_milestone_unlocks(milestone_unlocks)
         divide_team = record_divide_press(player, milestone_unlocks, added_presses)
         if divide_team:
             save_global_milestone_unlocks(milestone_unlocks)
@@ -1425,6 +1466,13 @@ def press():
             first_place_notification["body"],
             "/leaderboard.html",
             first_place_notification["tag"],
+        )
+    for notification in event_warning_notifications:
+        send_push_to_all_async(
+            notification["title"],
+            notification["body"],
+            "/global-milestones.html",
+            notification["tag"],
         )
     for milestone in new_global_milestones:
         send_push_to_all_async(
