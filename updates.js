@@ -6,6 +6,20 @@
   */
   const UPDATES = [
     {
+      version:'2.17.7',
+      date:'June 28, 2026',
+      tldr:'Friend Button got a much better look.',
+      highlights:[
+        'Friend Button now has a real friendship design.',
+        'The skin has connected friends, invite dots, and a brighter glow.'
+      ],
+      details:[
+        'The referral reward skin was redesigned so it feels special instead of looking like a basic gradient.',
+        'The new Friend Button has three friend shapes connected together, with small invite lights around the edge.',
+        'This makes the 3-referral reward feel more like something players would actually want to use.'
+      ]
+    },
+    {
       version:'2.17.6',
       date:'June 28, 2026',
       tldr:'Referral links now reward players for inviting friends.',
