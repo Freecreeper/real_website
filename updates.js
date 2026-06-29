@@ -6,6 +6,22 @@
   */
   const UPDATES = [
     {
+      version:'2.17.6',
+      date:'June 28, 2026',
+      tldr:'Referral links now reward players for inviting friends.',
+      highlights:[
+        'Every player gets an invite link on their Profile page.',
+        'A referral counts after the invited friend reaches 25 presses.',
+        'New referral achievements and the Friend Button skin are available.'
+      ],
+      details:[
+        'Players can share their personal invite link from the Profile page.',
+        'To keep it fair, an invite only counts when the new player reaches 25 presses.',
+        'Referral rewards are Button Recruiter at 1 real referral, Friend Button at 3 real referrals, and Button Ambassador at 5 real referrals.',
+        'Referral progress is tracked on the server so rewards cannot be unlocked just by editing browser storage.'
+      ]
+    },
+    {
       version:'2.17.5',
       date:'June 28, 2026',
       tldr:'The Great Divide is now a real 14-day season.',

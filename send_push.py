@@ -68,6 +68,10 @@ def connect():
     return conn
 
 
+def normalize_player_name(name):
+    return " ".join(str(name or "").strip().lower().split())
+
+
 def init_db():
     with connect() as conn:
         conn.execute(
@@ -98,6 +102,7 @@ def main():
     parser = argparse.ArgumentParser(description="Send Web Push notifications to Chaos Mode subscribers.")
     parser.add_argument("title")
     parser.add_argument("body")
+    parser.add_argument("--name", default="", help="Send only to this player name.")
     parser.add_argument("--url", default="/index.html")
     parser.add_argument("--tag", default="the-button-chaos")
     args = parser.parse_args()
@@ -117,9 +122,20 @@ def main():
     }, separators=(",", ":"))
 
     with connect() as conn:
-        rows = conn.execute(
-            "SELECT endpoint, subscription FROM push_subscriptions WHERE chaos_enabled = 1"
-        ).fetchall()
+        if args.name.strip():
+            target_name = normalize_player_name(args.name)
+            rows = conn.execute(
+                """
+                SELECT endpoint, subscription
+                FROM push_subscriptions
+                WHERE chaos_enabled = 1 AND lower(trim(name)) = ?
+                """,
+                (target_name,),
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT endpoint, subscription FROM push_subscriptions WHERE chaos_enabled = 1"
+            ).fetchall()
 
     sent = 0
     failed = 0

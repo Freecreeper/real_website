@@ -61,6 +61,10 @@
       bestStreak:0,
       lastPressDate:''
     },
+    referral:{
+      referrer:'',
+      device:''
+    },
     divideTeam:null,
     skins:{
       owned:['classic'],
@@ -157,6 +161,7 @@
     {id:'meteor', name:'Meteor', unlock:'Drops during Meteor Impact', requirement:()=>state.skins.owned.includes('meteor')},
     {id:'red-champion', name:'Red Champion', unlock:'Win a Great Divide season with Team Red', requirement:()=>state.skins.owned.includes('red-champion')},
     {id:'blue-champion', name:'Blue Champion', unlock:'Win a Great Divide season with Team Blue', requirement:()=>state.skins.owned.includes('blue-champion')},
+    {id:'friend-button', name:'Friend Button', unlock:'Invite 3 friends who reach 25 presses', requirement:()=>state.skins.owned.includes('friend-button')},
     {id:'present', name:'Special Present', unlock:'Extremely rare Secret Reward drop', requirement:()=>state.skins.owned.includes('present')},
     {id:'sunrise', name:'Sunrise', unlock:'Press 25 times', requirement:()=>state.presses >= 25},
     {id:'matrix', name:'Matrix', unlock:'Press 100 times', requirement:()=>state.presses >= 100},
@@ -176,6 +181,23 @@
   function save(){
     try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state))}catch(e){console.warn('save err',e)}
   }
+  function captureReferralFromUrl(){
+    try{
+      const params = new URLSearchParams(window.location.search);
+      const ref = (params.get('ref') || '').trim().slice(0,32);
+      if(!ref) return;
+      state.referral = state.referral || {};
+      const currentName = (state.gamerTag || '').trim().toLowerCase();
+      if(currentName && currentName !== 'traveler' && currentName === ref.toLowerCase()) return;
+      state.referral.referrer = ref;
+      save();
+      toast(`Invite saved from ${ref}. Reach 25 presses to count it.`);
+      params.delete('ref');
+      const nextQuery = params.toString();
+      const nextUrl = window.location.pathname + (nextQuery ? `?${nextQuery}` : '') + window.location.hash;
+      history.replaceState(null, '', nextUrl);
+    }catch(error){}
+  }
   function migrateState(){
     state.achievements = Array.isArray(state.achievements) ? state.achievements : [];
     state.eventAchievements = Array.isArray(state.eventAchievements) ? state.eventAchievements : [];
@@ -188,6 +210,13 @@
       bestStreak:0,
       lastPressDate:''
     }, state.daily || {});
+    state.referral = Object.assign({
+      referrer:'',
+      device:''
+    }, state.referral || {});
+    if(!state.referral.device){
+      state.referral.device = `ref-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,10)}`;
+    }
     if(state.divideTeam !== 'red' && state.divideTeam !== 'blue') state.divideTeam = null;
     state.skins = Object.assign({
       owned:['classic'],
@@ -279,6 +308,7 @@
           meteor:'Meteor Button',
           'red-champion':'Red Champion Button',
           'blue-champion':'Blue Champion Button',
+          'friend-button':'Friend Button',
           present:'Special Present Button'
         };
         const skinName = skinNames[skin] || skin;
@@ -1643,6 +1673,7 @@ if(countEl){
 
   // --- Init ---
   load();
+  captureReferralFromUrl();
   applySavedUser();
   render();
   initParticles();
@@ -1701,7 +1732,11 @@ if(countEl){
       body:JSON.stringify({
         name: state.gamerTag,
         delta: delta,
-        presses: Number(state.presses || 0)
+        presses: Number(state.presses || 0),
+        referral: {
+          referrer: state.referral && state.referral.referrer,
+          device: state.referral && state.referral.device
+        }
       })
     }
   );

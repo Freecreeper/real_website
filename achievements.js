@@ -18,6 +18,16 @@
       id:'meteor',
       title:'Meteor Badge',
       description:'Press during the Meteor Impact global event.'
+    },
+    {
+      id:'button-recruiter',
+      title:'Button Recruiter',
+      description:'Invite 1 friend who reaches 25 presses.'
+    },
+    {
+      id:'button-ambassador',
+      title:'Button Ambassador',
+      description:'Invite 5 friends who reach 25 presses.'
     }
   ];
 

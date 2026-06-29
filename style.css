@@ -69,10 +69,12 @@ body.nightfall-intro::after{
 .giant.skin-meteor{background:radial-gradient(circle at 35% 25%,#ffefc7 0 10%,#ff8b3d 24%,#8f2e14 56%,#2a120c 100%);color:#fff4dc;text-shadow:0 2px 10px rgba(0,0,0,.55)}
 .giant.skin-red-champion{position:relative;overflow:hidden;background:radial-gradient(circle at 34% 24%,#fff1e7 0 7%,#ff9a88 8% 18%,#f22944 37%,#8f071d 68%,#2b050d 100%);color:#fff7f2;text-shadow:0 2px 10px rgba(0,0,0,.62);box-shadow:0 0 34px rgba(255,54,76,.42),0 20px 62px rgba(145,7,29,.32),inset 0 -8px 22px rgba(0,0,0,.3)}
 .giant.skin-blue-champion{position:relative;overflow:hidden;background:radial-gradient(circle at 34% 24%,#f1fbff 0 7%,#8bd8ff 8% 18%,#2e68ff 38%,#1239af 68%,#06113a 100%);color:#f4fbff;text-shadow:0 2px 10px rgba(0,0,0,.62);box-shadow:0 0 34px rgba(62,134,255,.44),0 20px 62px rgba(11,39,130,.34),inset 0 -8px 22px rgba(0,0,0,.3)}
+.giant.skin-friend-button{position:relative;overflow:hidden;background:radial-gradient(circle at 32% 22%,#fff 0 7%,#b9fff0 8% 16%,#00d6a3 32%,#1867c9 68%,#06142f 100%);color:#f5fffc;text-shadow:0 2px 10px rgba(0,0,0,.62);box-shadow:0 0 34px rgba(0,214,163,.38),0 20px 62px rgba(24,103,201,.28),inset 0 -8px 22px rgba(0,0,0,.3)}
 .giant.skin-present{position:relative;overflow:hidden;background:radial-gradient(circle at 32% 18%,#fff 0 7%,#fff1a8 8% 15%,#ff62b8 26%,#7d39ff 60%,#21073d 100%);color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.62);box-shadow:0 0 34px rgba(255,98,184,.36),0 20px 62px rgba(125,57,255,.28),inset 0 -8px 22px rgba(0,0,0,.3)}
-.giant.skin-red-champion::before,.giant.skin-blue-champion::before,.giant.skin-present::before{content:"";position:absolute;inset:0;pointer-events:none}
+.giant.skin-red-champion::before,.giant.skin-blue-champion::before,.giant.skin-friend-button::before,.giant.skin-present::before{content:"";position:absolute;inset:0;pointer-events:none}
 .giant.skin-red-champion::before{background:linear-gradient(90deg,transparent 0 43%,rgba(255,230,160,.86) 44% 48%,transparent 49%),linear-gradient(0deg,transparent 0 55%,rgba(255,230,160,.78) 56% 61%,transparent 62%),radial-gradient(circle at 50% 23%,rgba(255,244,196,.95) 0 4%,transparent 5%),radial-gradient(circle at 38% 28%,rgba(255,244,196,.85) 0 3%,transparent 4%),radial-gradient(circle at 62% 28%,rgba(255,244,196,.85) 0 3%,transparent 4%)}
 .giant.skin-blue-champion::before{background:linear-gradient(90deg,transparent 0 43%,rgba(185,244,255,.9) 44% 48%,transparent 49%),linear-gradient(0deg,transparent 0 55%,rgba(185,244,255,.78) 56% 61%,transparent 62%),radial-gradient(circle at 50% 23%,rgba(235,253,255,.96) 0 4%,transparent 5%),radial-gradient(circle at 38% 28%,rgba(235,253,255,.82) 0 3%,transparent 4%),radial-gradient(circle at 62% 28%,rgba(235,253,255,.82) 0 3%,transparent 4%)}
+.giant.skin-friend-button::before{background:radial-gradient(circle at 38% 34%,rgba(255,255,255,.92) 0 7%,transparent 8%),radial-gradient(circle at 62% 34%,rgba(255,255,255,.92) 0 7%,transparent 8%),linear-gradient(90deg,transparent 0 47%,rgba(255,255,255,.76) 48% 52%,transparent 53%)}
 .giant.skin-present::before{background:linear-gradient(90deg,transparent 0 43%,rgba(255,242,116,.94) 44% 51%,transparent 52%),linear-gradient(0deg,transparent 0 43%,rgba(255,242,116,.88) 44% 51%,transparent 52%),radial-gradient(circle at 42% 31%,rgba(255,242,116,.95) 0 8%,transparent 9%),radial-gradient(circle at 58% 31%,rgba(255,242,116,.95) 0 8%,transparent 9%),radial-gradient(circle at 50% 35%,rgba(255,255,255,.92) 0 5%,transparent 6%)}
 .giant.skin-sunrise{background:linear-gradient(180deg,#ffd166,#ef476f);color:#241106}
 .giant.skin-matrix{background:linear-gradient(180deg,#00e6a8,#0b6e4f);color:#02140e}
@@ -312,6 +314,15 @@ body.great-divide-intro{animation:dividePagePulse 3200ms ease both}
 .stat-tile{padding:13px;border:1px solid rgba(255,255,255,.07);border-radius:8px;background:rgba(255,255,255,.025)}
 .stat-tile span{display:block;color:rgba(255,255,255,.48);font-size:11px;font-weight:800;text-transform:uppercase}
 .stat-tile strong{display:block;margin-top:5px;color:#fff;font-size:22px}
+.referral-card{grid-column:1 / -1}
+.referral-link-row{display:grid;grid-template-columns:1fr auto;gap:8px;margin:14px 0}
+.referral-link-row input{min-width:0;padding:11px 12px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.04);color:#fff;font:inherit}
+.referral-stat-grid{margin-top:12px}
+.referral-rewards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:12px}
+.referral-reward{padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:rgba(255,255,255,.025)}
+.referral-reward.unlocked{border-color:rgba(0,230,168,.28);background:rgba(0,230,168,.08)}
+.referral-reward strong{display:block;color:#fff}
+.referral-reward span{display:block;margin-top:4px;color:rgba(255,255,255,.56);font-size:12px}
 .skin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
 .skin-card{padding:12px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:rgba(255,255,255,.025)}
 .skin-card{color:inherit;text-align:left;font:inherit;cursor:pointer}
@@ -431,7 +442,7 @@ body.secret-awake .secret-core{animation:secretPulse 1200ms ease-in-out infinite
   .profile-main{padding-top:132px}
   .profile-grid{grid-template-columns:1fr}
   .profile-name{align-items:start;flex-direction:column}
-  .stat-grid,.skin-grid,.menu-grid,.settings-grid,.credits-list{grid-template-columns:1fr}
+  .stat-grid,.skin-grid,.menu-grid,.settings-grid,.credits-list,.referral-rewards{grid-template-columns:1fr}
   .milestone-columns,.update-detail-grid{grid-template-columns:1fr}
   .divide-mvp-grid{grid-template-columns:1fr}
   .easter-hero,.secret-grid{grid-template-columns:1fr}

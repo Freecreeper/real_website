@@ -84,6 +84,14 @@ DEFAULT_BLOCKED_NAME_TERMS = {
 }
 MOON_SKIN_DROP_CHANCE = 0.05
 METEOR_SKIN_DROP_CHANCE = 0.05
+REFERRAL_REQUIRED_PRESSES = 25
+REFERRAL_REWARD_ACHIEVEMENTS = {
+    1: "button-recruiter",
+    5: "button-ambassador",
+}
+REFERRAL_REWARD_SKINS = {
+    3: "friend-button",
+}
 DIVIDE_TEAMS = {
     "red": {
         "name": "Red",
@@ -287,6 +295,16 @@ def init_db():
                 chaos_enabled INTEGER NOT NULL DEFAULT 1,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS referrals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                referrer_name TEXT NOT NULL,
+                referred_name TEXT NOT NULL,
+                referred_device TEXT NOT NULL,
+                credited_at TEXT NOT NULL,
+                UNIQUE(referred_name),
+                UNIQUE(referred_device)
             );
         """)
         for key, value in STAT_DEFAULTS.items():
@@ -801,6 +819,107 @@ def save_leaderboard(data):
                     datetime.now(timezone.utc).isoformat(),
                 ),
             )
+
+
+def ensure_player_record(leaderboard, name):
+    if name not in leaderboard:
+        leaderboard[name] = {
+            "presses": 0,
+            "achievements": 0,
+            "exclusive_achievements": [],
+            "event_achievements": [],
+            "skins": [],
+        }
+    player = leaderboard[name]
+    player.setdefault("exclusive_achievements", [])
+    player.setdefault("event_achievements", [])
+    player.setdefault("skins", [])
+    return player
+
+
+def referral_count_for(name):
+    init_db()
+    with db_connect() as conn:
+        row = conn.execute(
+            "SELECT COUNT(*) AS count FROM referrals WHERE referrer_name = ?",
+            (clean_player_name(name),),
+        ).fetchone()
+    return int(row["count"] if row else 0)
+
+
+def referral_progress_payload(name):
+    clean_name = clean_player_name(name)
+    count = referral_count_for(clean_name)
+    return {
+        "name": clean_name,
+        "count": count,
+        "required_presses": REFERRAL_REQUIRED_PRESSES,
+        "share_url": f"/?ref={clean_name}",
+        "rewards": [
+            {"count": 1, "type": "achievement", "id": "button-recruiter", "name": "Button Recruiter"},
+            {"count": 3, "type": "skin", "id": "friend-button", "name": "Friend Button"},
+            {"count": 5, "type": "achievement", "id": "button-ambassador", "name": "Button Ambassador"},
+        ],
+    }
+
+
+def apply_referral_rewards(player, referral_count):
+    rewards = {"event_achievements": [], "skins": []}
+    player.setdefault("event_achievements", [])
+    player.setdefault("skins", [])
+
+    for needed, achievement in REFERRAL_REWARD_ACHIEVEMENTS.items():
+        if referral_count >= needed and achievement not in player["event_achievements"]:
+            player["event_achievements"].append(achievement)
+            rewards["event_achievements"].append(achievement)
+
+    for needed, skin in REFERRAL_REWARD_SKINS.items():
+        if referral_count >= needed and skin not in player["skins"]:
+            player["skins"].append(skin)
+            rewards["skins"].append(skin)
+
+    return rewards
+
+
+def process_referral(referrer_name, referred_name, referred_device, referred_presses, leaderboard):
+    referrer_name = clean_player_name(referrer_name)
+    referred_name = clean_player_name(referred_name)
+    referred_device = str(referred_device or "").strip()[:96]
+
+    if not referrer_name or not referred_name or not referred_device:
+        return None
+    if referrer_name == referred_name or is_rejected_name(referrer_name) or is_rejected_name(referred_name):
+        return None
+    if int(referred_presses or 0) < REFERRAL_REQUIRED_PRESSES:
+        return None
+
+    now = datetime.now(timezone.utc).isoformat()
+    init_db()
+    try:
+        with db_connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO referrals(referrer_name, referred_name, referred_device, credited_at)
+                VALUES (?, ?, ?, ?)
+                """,
+                (referrer_name, referred_name, referred_device, now),
+            )
+    except sqlite3.IntegrityError:
+        return None
+
+    referrer = ensure_player_record(leaderboard, referrer_name)
+    count = referral_count_for(referrer_name)
+    rewards = apply_referral_rewards(referrer, count)
+    referrer["achievements"] = achievement_count(
+        int(referrer.get("presses", 0) or 0),
+        referrer.get("exclusive_achievements", []),
+    ) + len(referrer.get("event_achievements", []))
+    return {
+        "referrer": referrer_name,
+        "referred": referred_name,
+        "count": count,
+        "rewards": rewards,
+    }
 
 
 def leaderboard_press_total():
@@ -1475,25 +1594,14 @@ def press():
     podium_notifications = []
     first_place_notification = None
     event_warning_notifications = []
+    referral_credit = None
     with storage_lock:
         stats = repair_total_presses(load_stats())
         previous_total_presses = int(stats.get("total_presses", 0))
 
         leaderboard = load_leaderboard()
         previous_podium = leaderboard_podium(leaderboard)
-        if name not in leaderboard:
-            leaderboard[name] = {
-                "presses": 0,
-                "achievements": 0,
-                "exclusive_achievements": [],
-                "event_achievements": [],
-                "skins": []
-            }
-
-        player = leaderboard[name]
-        player.setdefault("exclusive_achievements", [])
-        player.setdefault("event_achievements", [])
-        player.setdefault("skins", [])
+        player = ensure_player_record(leaderboard, name)
         previous_presses = int(player.get("presses", 0))
         player["presses"] = max(previous_presses + delta, client_presses or 0)
         added_presses = max(0, player["presses"] - previous_presses)
@@ -1528,6 +1636,14 @@ def press():
         if divide_team:
             save_global_milestone_unlocks(milestone_unlocks)
         event_rewards = apply_global_event_rewards(player)
+        referral = payload.get("referral") if isinstance(payload.get("referral"), dict) else {}
+        referral_credit = process_referral(
+            referral.get("referrer"),
+            name,
+            referral.get("device"),
+            player["presses"],
+            leaderboard,
+        )
         player["achievements"] = achievement_count(
             player["presses"],
             player["exclusive_achievements"]
@@ -1539,6 +1655,14 @@ def press():
         first_place_notification = first_place_push_notification(previous_podium, new_podium)
 
     broadcast()
+    if referral_credit:
+        send_push_to_player_async(
+            referral_credit["referrer"],
+            "Referral counted!",
+            f"{referral_credit['referred']} reached {REFERRAL_REQUIRED_PRESSES} presses. You now have {referral_credit['count']} referral{'' if referral_credit['count'] == 1 else 's'}.",
+            "/stats.html",
+            f"referral-{referral_credit['count']}",
+        )
     for notification in podium_notifications:
         send_push_to_player_async(
             notification["name"],
@@ -1576,6 +1700,7 @@ def press():
         daily_goal=daily_goal,
         new_global_milestones=new_global_milestones,
         event_rewards=event_rewards,
+        referral_credit=referral_credit,
         divide=divide_state
     )
 
@@ -1641,6 +1766,16 @@ def stats():
     with storage_lock:
         current_stats = repair_total_presses(load_stats())
     return jsonify(current_stats)
+
+
+@app.get("/api/referrals")
+def referrals():
+    name = clean_player_name(request.args.get("name", "Anonymous"))
+    if is_rejected_name(name):
+        return jsonify(error="you cant do that"), 403
+    with storage_lock:
+        payload = referral_progress_payload(name)
+    return jsonify(payload)
 
 
 @app.get("/api/global-milestones")

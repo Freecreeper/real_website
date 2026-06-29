@@ -55,6 +55,20 @@
           <div class="stat-tile"><span>Achievements</span><strong id="g_total_achievement_unlocks">0</strong></div>
         </div>
       </div>
+
+      <div class="glass profile-card referral-card">
+        <h2>Invite Friends</h2>
+        <p class="muted">Share your link. When a new friend reaches 25 presses, it counts as a referral.</p>
+        <div class="referral-link-row">
+          <input id="referral-link" readonly value="Loading invite link..." />
+          <button id="copy-referral" class="pill primary" type="button">Copy</button>
+        </div>
+        <div class="stat-grid referral-stat-grid">
+          <div class="stat-tile"><span>Real referrals</span><strong id="referral-count">0</strong></div>
+          <div class="stat-tile"><span>Friend goal</span><strong id="referral-next">1</strong></div>
+        </div>
+        <div id="referral-rewards" class="referral-rewards"></div>
+      </div>
     </section>
   </main>
 
@@ -137,6 +151,39 @@
       setText('global-stats-status', 'Stats API is not reachable from this page. Check that /api/stats is routed to Flask.');
     }
   }
+  async function fetchReferrals(){
+    const state = loadState();
+    const name = state.gamerTag || 'Traveler';
+    const input = qs('#referral-link');
+    const countEl = qs('#referral-count');
+    const nextEl = qs('#referral-next');
+    const rewardsEl = qs('#referral-rewards');
+    const fallbackUrl = `${location.origin}/?ref=${encodeURIComponent(name)}`;
+    if(input) input.value = fallbackUrl;
+    if(name === 'Traveler') return;
+    try{
+      const res = await window.buttonApiFetch(`/api/referrals?name=${encodeURIComponent(name)}`);
+      if(!res.ok) throw new Error('referrals unavailable');
+      const data = await res.json();
+      const shareUrl = new URL(data.share_url || `/?ref=${encodeURIComponent(name)}`, location.origin).toString();
+      if(input) input.value = shareUrl;
+      if(countEl) countEl.textContent = Number(data.count || 0).toLocaleString();
+      const rewards = Array.isArray(data.rewards) ? data.rewards : [];
+      const next = rewards.find(reward => Number(data.count || 0) < Number(reward.count || 0));
+      if(nextEl) nextEl.textContent = next ? `${Number(data.count || 0)} / ${next.count}` : 'Done';
+      if(rewardsEl){
+        rewardsEl.replaceChildren(...rewards.map(reward => {
+          const item = document.createElement('div');
+          const unlocked = Number(data.count || 0) >= Number(reward.count || 0);
+          item.className = `referral-reward ${unlocked ? 'unlocked' : 'locked'}`;
+          item.innerHTML = `<strong>${reward.name}</strong><span>${reward.count} referral${reward.count === 1 ? '' : 's'}${unlocked ? ' - unlocked' : ''}</span>`;
+          return item;
+        }));
+      }
+    }catch(error){
+      if(rewardsEl) rewardsEl.textContent = 'Referral progress is not reachable right now.';
+    }
+  }
   function initParticles(){
     const canvas = document.getElementById('particles');
     if(!canvas) return;
@@ -160,9 +207,22 @@
 
   renderProfile();
   fetchStats();
+  fetchReferrals();
   initParticles();
   if(window.setupVersionEgg) window.setupVersionEgg();
-  setInterval(()=>{ renderProfile(); fetchStats(); }, 5000);
+  qs('#copy-referral')?.addEventListener('click', async () => {
+    const input = qs('#referral-link');
+    if(!input) return;
+    try{
+      await navigator.clipboard.writeText(input.value);
+      qs('#copy-referral').textContent = 'Copied';
+      setTimeout(()=>{ qs('#copy-referral').textContent = 'Copy'; }, 1200);
+    }catch(error){
+      input.select();
+      document.execCommand('copy');
+    }
+  });
+  setInterval(()=>{ renderProfile(); fetchStats(); fetchReferrals(); }, 5000);
   </script>
 </body>
 </html>
