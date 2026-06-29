@@ -4,6 +4,7 @@
     {id:'classic', name:'Classic', unlock:'Starter skin', requirement:state => true},
     {id:'moon', name:'Moon', unlock:'Drops during The Night Falls event', requirement:state => (state.skins?.owned || []).includes('moon')},
     {id:'meteor', name:'Meteor', unlock:'Drops during Meteor Impact', requirement:state => (state.skins?.owned || []).includes('meteor')},
+    {id:'alien', name:'Alien', unlock:'Drops during Alien Contact', requirement:state => (state.skins?.owned || []).includes('alien')},
     {id:'red-champion', name:'Red Champion', unlock:'Win a Great Divide season with Team Red', requirement:state => (state.skins?.owned || []).includes('red-champion')},
     {id:'blue-champion', name:'Blue Champion', unlock:'Win a Great Divide season with Team Blue', requirement:state => (state.skins?.owned || []).includes('blue-champion')},
     {id:'friend-button', name:'Friend Button', unlock:'Invite 3 friends who reach 25 presses', requirement:state => (state.skins?.owned || []).includes('friend-button')},

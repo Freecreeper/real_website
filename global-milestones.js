@@ -42,7 +42,7 @@
       status:'locked',
       active_hours:168,
       effects:['Page glitches', 'Random weird sounds', 'The button floats', 'UFOs fly across the page'],
-      rewards:['Alien button skin available for a week']
+      rewards:['Alien Contact Badge for everyone who presses during the event', 'Alien Button skin drop chance for a week']
     },
     {
       id:'surge',

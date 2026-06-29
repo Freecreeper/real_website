@@ -20,6 +20,11 @@
       description:'Press during the Meteor Impact global event.'
     },
     {
+      id:'alien',
+      title:'Alien Contact Badge',
+      description:'Press during the Alien Contact global event.'
+    },
+    {
       id:'button-recruiter',
       title:'Button Recruiter',
       description:'Invite 1 friend who reaches 25 presses.'

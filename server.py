@@ -84,6 +84,7 @@ DEFAULT_BLOCKED_NAME_TERMS = {
 }
 MOON_SKIN_DROP_CHANCE = 0.05
 METEOR_SKIN_DROP_CHANCE = 0.05
+ALIEN_SKIN_DROP_CHANCE = 0.05
 REFERRAL_REQUIRED_PRESSES = 25
 REFERRAL_REWARD_ACHIEVEMENTS = {
     1: "button-recruiter",
@@ -143,7 +144,7 @@ GLOBAL_MILESTONE_DEFS = [
         "event": "Aliens hack the website.",
         "active_hours": 168,
         "effects": ["Page glitches", "Random weird sounds", "The button floats", "UFOs fly across the page"],
-        "rewards": ["Alien button skin available for a week"],
+        "rewards": ["Alien Contact Badge for everyone who presses during the event", "Alien Button skin drop chance for a week"],
     },
     {
         "id": "surge",
@@ -1459,6 +1460,15 @@ def apply_global_event_rewards(player):
         if "meteor" not in player["skins"] and random.random() < METEOR_SKIN_DROP_CHANCE:
             player["skins"].append("meteor")
             rewards["skins"].append("meteor")
+
+    if active_global_milestone("alien"):
+        if "alien" not in player["event_achievements"]:
+            player["event_achievements"].append("alien")
+            rewards["event_achievements"].append("alien")
+
+        if "alien" not in player["skins"] and random.random() < ALIEN_SKIN_DROP_CHANCE:
+            player["skins"].append("alien")
+            rewards["skins"].append("alien")
 
     return rewards
 

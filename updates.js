@@ -6,6 +6,22 @@
   */
   const UPDATES = [
     {
+      version:'2.17.8',
+      date:'June 29, 2026',
+      tldr:'Alien Contact now fully activates at 100,000 global presses.',
+      highlights:[
+        'Alien Contact runs for one week after 100,000 presses.',
+        'The page glitches, UFOs fly across, and the button floats.',
+        'Players can earn the Alien Contact Badge and Alien Button skin.'
+      ],
+      details:[
+        'When the community reaches 100,000 global presses, Alien Contact becomes an active global event for 7 days.',
+        'During the event the page gets hacked-style visuals, scan effects, UFO flybys, floating button motion, strange messages, and short alien chirps after pressing.',
+        'Anyone who presses during the event gets the Alien Contact Badge.',
+        'Every press during the event also has a chance to unlock the Alien Button skin.'
+      ]
+    },
+    {
       version:'2.17.7',
       date:'June 28, 2026',
       tldr:'Friend Button got a much better look.',

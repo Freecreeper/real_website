@@ -76,6 +76,10 @@
   let nightFallsActive = false;
   let nightFallsAudio = null;
   let meteorUnlocked = false;
+  let alienContactActive = false;
+  let alienSoundTimer = null;
+  let alienMessageTimer = null;
+  let alienAudioContext = null;
   let divideState = {active:false, teams:{red:{presses:0}, blue:{presses:0}}, leader:'tie', player:{team:null, presses:0}};
   let divideChoiceModal = null;
   let onboardMode = 'new';
@@ -137,7 +141,8 @@
       'A museum tried to display The Button, but the display case got nervous.',
       'The Button has a favorite cloud and will not say which one.',
       'The Button can smell fresh patch notes from two rooms away.',
-      'The Button once convinced a calendar to add Thursday 2.'
+      'The Button once convinced a calendar to add Thursday 2.',
+      'A mysterious visitor arrived, gave no name, pressed no buttons, and vanished without a trace.'
     ];
     const out = [];
     for(let i=0;i<220;i++){
@@ -159,6 +164,7 @@
     {id:'classic', name:'Classic', unlock:'Starter skin', requirement:()=>true},
     {id:'moon', name:'Moon', unlock:'Drops during The Night Falls', requirement:()=>state.skins.owned.includes('moon')},
     {id:'meteor', name:'Meteor', unlock:'Drops during Meteor Impact', requirement:()=>state.skins.owned.includes('meteor')},
+    {id:'alien', name:'Alien', unlock:'Drops during Alien Contact', requirement:()=>state.skins.owned.includes('alien')},
     {id:'red-champion', name:'Red Champion', unlock:'Win a Great Divide season with Team Red', requirement:()=>state.skins.owned.includes('red-champion')},
     {id:'blue-champion', name:'Blue Champion', unlock:'Win a Great Divide season with Team Blue', requirement:()=>state.skins.owned.includes('blue-champion')},
     {id:'friend-button', name:'Friend Button', unlock:'Invite 3 friends who reach 25 presses', requirement:()=>state.skins.owned.includes('friend-button')},
@@ -296,6 +302,9 @@
         }else if(achievement === 'meteor'){
           toast('Event badge unlocked: Meteor', {time:6000});
           showAchievementPopup('Meteor Badge');
+        }else if(achievement === 'alien'){
+          toast('Event badge unlocked: Alien Contact', {time:6000});
+          showAchievementPopup('Alien Contact Badge');
         }
       }
     }
@@ -306,6 +315,7 @@
         const skinNames = {
           moon:'Moon Button',
           meteor:'Meteor Button',
+          alien:'Alien Button',
           'red-champion':'Red Champion Button',
           'blue-champion':'Blue Champion Button',
           'friend-button':'Friend Button',
@@ -443,6 +453,112 @@
     }else{
       document.body.classList.remove('meteor-countdown');
     }
+  }
+
+  function ensureAlienContactLayer(){
+    let layer = qs('#alien-contact-layer');
+    if(layer) return layer;
+    layer = document.createElement('div');
+    layer.id = 'alien-contact-layer';
+    layer.setAttribute('aria-hidden', 'true');
+    layer.innerHTML = `
+      <span class="alien-ufo ufo-a"></span>
+      <span class="alien-ufo ufo-b"></span>
+      <span class="alien-ufo ufo-c"></span>
+      <span class="alien-scan scan-a"></span>
+      <span class="alien-scan scan-b"></span>
+      <span class="alien-hack hack-a">SIGNAL FOUND</span>
+      <span class="alien-hack hack-b">BUTTON OVERRIDE</span>
+      <span class="alien-hack hack-c">HELLO PRESSER</span>
+    `;
+    document.body.appendChild(layer);
+    return layer;
+  }
+
+  function stopAlienContactSounds(){
+    if(alienSoundTimer){
+      clearInterval(alienSoundTimer);
+      alienSoundTimer = null;
+    }
+  }
+
+  function startAlienContactMessages(){
+    if(alienMessageTimer) return;
+    const alienMessages = [
+      'TRANSMISSION: your button is under observation.',
+      'ALIEN CONTACT: press patterns are being studied.',
+      'UFO telemetry says keep pressing.',
+      'MESSAGE FROM ORBIT: the button floats now.',
+      'UNKNOWN SIGNAL: reward probability unstable.',
+      'ALIEN SYSTEM NOTICE: this website has been politely hacked.'
+    ];
+    alienMessageTimer = setInterval(() => {
+      if(alienContactActive && msgBox){
+        msgBox.textContent = alienMessages[rand(0, alienMessages.length - 1)];
+      }
+    }, 9000);
+  }
+
+  function stopAlienContactMessages(){
+    if(alienMessageTimer){
+      clearInterval(alienMessageTimer);
+      alienMessageTimer = null;
+    }
+  }
+
+  function playAlienChirp(){
+    if(!alienContactActive) return;
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if(!AudioContext) return;
+    try{
+      if(!alienAudioContext) alienAudioContext = new AudioContext();
+      const ctx = alienAudioContext;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const start = ctx.currentTime;
+      osc.type = Math.random() > 0.5 ? 'sawtooth' : 'square';
+      osc.frequency.setValueAtTime(rand(260,520), start);
+      osc.frequency.exponentialRampToValueAtTime(rand(680,1240), start + 0.14);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.025, start + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.24);
+    }catch(error){}
+  }
+
+  function startAlienContactSounds(){
+    if(!alienContactActive || alienSoundTimer) return;
+    playAlienChirp();
+    alienSoundTimer = setInterval(playAlienChirp, 4200 + rand(0, 4200));
+  }
+
+  function triggerAlienContactIntro(){
+    ensureAlienContactLayer();
+    document.body.classList.add('alien-contact-intro');
+    setTimeout(()=>document.body.classList.remove('alien-contact-intro'), 3600);
+  }
+
+  function applyAlienContactEvent(milestone, animate=false){
+    const active = milestone && milestone.status === 'active';
+    alienContactActive = Boolean(active);
+    document.body.classList.toggle('alien-contact-active', alienContactActive);
+    if(!alienContactActive){
+      const layer = qs('#alien-contact-layer');
+      if(layer) layer.remove();
+      stopAlienContactSounds();
+      stopAlienContactMessages();
+      return;
+    }
+
+    ensureAlienContactLayer();
+    startAlienContactMessages();
+    const subtext = qs('#subtext');
+    if(subtext) subtext.textContent = 'Alien Contact is live. The site has been politely hacked.';
+    if(msgBox) msgBox.textContent = 'Alien Contact is active. Press now for the Alien Contact Badge and a chance at the Alien Button skin.';
+    if(animate) triggerAlienContactIntro();
   }
 
   function divideTeamName(team){
@@ -882,6 +998,8 @@ if(visitorGreeting){
           applyMeteorEvent(milestone, 20000, true);
         }else if(milestone.id === 'divide'){
           applyGreatDivideEvent(milestone, data.divide, true);
+        }else if(milestone.id === 'alien'){
+          applyAlienContactEvent(milestone, true);
         }
       }
       applyEventRewards(data.event_rewards);
@@ -1260,6 +1378,7 @@ function alienContact() {
     }
     recordClickTime();
     startNightFallsMusic();
+    startAlienContactSounds();
     state.presses++;
     recordDailyPress();
     updateGlobalPresses(1);
@@ -1867,6 +1986,7 @@ if(countEl){
       const firstEra = (data.milestones || []).find(milestone => milestone.id === 'first-era');
       const meteor = (data.milestones || []).find(milestone => milestone.id === 'meteor');
       const divide = (data.milestones || []).find(milestone => milestone.id === 'divide');
+      const alien = (data.milestones || []).find(milestone => milestone.id === 'alien');
       let divideData = data.divide;
       if(milestoneIsActive(divide)){
         try{
@@ -1877,6 +1997,7 @@ if(countEl){
       applyNightFallsEvent(milestoneIsActive(firstEra), false);
       applyMeteorEvent(meteor, data.total_presses || 0, false);
       applyGreatDivideEvent(divide, divideData, false);
+      applyAlienContactEvent(alien, false);
     }catch(e){ /* keep the normal button page if the API is unavailable */ }
   }
 
