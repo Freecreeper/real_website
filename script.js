@@ -1050,6 +1050,7 @@ if(visitorGreeting){
       case 'banReport': prankBanReport(); break;
       case 'dadJoke': prankDadJoke(); break;
       case 'coconutWater': prankCoconutWater(); break;
+      case 'sixtySeven': prankSixtySeven(); break;
       case 'rickroll': prankRickroll(); break;
       default: toast('Something strange happened.');
     }
@@ -1337,6 +1338,26 @@ function alienContact() {
     card.querySelector('button').addEventListener('click', () => modal.remove());
   }
 
+  function prankSixtySeven(){
+    const modal = document.createElement('div');
+    modal.className = 'modal sixty-seven-modal';
+    const card = document.createElement('div');
+    card.className = 'modal-card glass sixty-seven-card';
+    card.innerHTML = `
+      <p class="eyebrow">Number anomaly</p>
+      <div class="sixty-seven-number" aria-hidden="true">67</div>
+      <h3>67 detected</h3>
+      <p class="muted">The counter said the number. Protocol 67 has been activated.</p>
+      <div style="display:flex;justify-content:flex-end">
+        <button class="pill primary" type="button">understood</button>
+      </div>
+    `;
+    modal.appendChild(card);
+    document.body.appendChild(modal);
+    card.querySelector('button').addEventListener('click', () => modal.remove());
+    setTimeout(()=>modal.remove(), 6700);
+  }
+
  function prankRickroll() {
   const modal = document.createElement('div');
   modal.className = 'modal';
@@ -1380,6 +1401,7 @@ function alienContact() {
     startNightFallsMusic();
     startAlienContactSounds();
     state.presses++;
+    const hasSixtySeven = String(state.presses).includes('67');
     recordDailyPress();
     updateGlobalPresses(1);
     // animations
@@ -1389,9 +1411,13 @@ function alienContact() {
     // messages
     msgBox.textContent = messages[rand(0,messages.length-1)];
     unlockLore(); checkAchievements(); unlockSkins(true); save(); render();
-    // minor chance for secret reward
-    if(Math.random()<0.005) triggerPrank();
-    if(Math.random()<RICKROLL_CHANCE) triggerPrank('rickroll');
+    if(hasSixtySeven){
+      triggerPrank('sixtySeven');
+    }else{
+      // minor chance for secret reward
+      if(Math.random()<0.005) triggerPrank();
+      if(Math.random()<RICKROLL_CHANCE) triggerPrank('rickroll');
+    }
   }
 
   btn.addEventListener('pointerdown', handleButtonPress);

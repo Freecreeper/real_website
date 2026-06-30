@@ -6,6 +6,20 @@
   */
   const UPDATES = [
     {
+      version:'2.17.9',
+      date:'June 30, 2026',
+      tldr:'A new 67 prank triggers when your press count contains 67.',
+      highlights:[
+        'Counts like 67, 167, 1670, and 6700 now trigger a special prank.',
+        'The prank is deterministic, not random.'
+      ],
+      details:[
+        'Whenever your press count includes the digits 67, the site activates Protocol 67.',
+        'This runs from the actual button press count, so it can happen at numbers like 67, 167, 267, 1670, 6700, and any other count containing 67.',
+        'The prank is separate from the normal random prank pool so the number itself is what triggers it.'
+      ]
+    },
+    {
       version:'2.17.8',
       date:'June 29, 2026',
       tldr:'Alien Contact now fully activates at 100,000 global presses.',
