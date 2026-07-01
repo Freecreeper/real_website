@@ -6,6 +6,20 @@
   */
   const UPDATES = [
     {
+      version:'2.17.10',
+      date:'July 1, 2026',
+      tldr:'The 67 prank now fires once per 67 streak instead of every press.',
+      highlights:[
+        '6700 triggers the 67 prank once, but 6701 through 6799 no longer spam it.',
+        'The popup now includes the hands emoji.'
+      ],
+      details:[
+        'The 67 prank now compares the previous press count to the new press count.',
+        'If the new number contains 67 and the previous number did not, the prank fires.',
+        'This keeps numbers like 67, 167, 1670, and 6700 special without creating 100 repeated popups in the 6700 range.'
+      ]
+    },
+    {
       version:'2.17.9',
       date:'June 30, 2026',
       tldr:'A new 67 prank triggers when your press count contains 67.',

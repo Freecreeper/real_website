@@ -1345,7 +1345,7 @@ function alienContact() {
     card.className = 'modal-card glass sixty-seven-card';
     card.innerHTML = `
       <p class="eyebrow">Number anomaly</p>
-      <div class="sixty-seven-number" aria-hidden="true">67</div>
+      <div class="sixty-seven-number" aria-hidden="true"><span>🤲</span><strong>67</strong></div>
       <h3>67 detected</h3>
       <p class="muted">The counter said the number. Protocol 67 has been activated.</p>
       <div style="display:flex;justify-content:flex-end">
@@ -1400,8 +1400,9 @@ function alienContact() {
     recordClickTime();
     startNightFallsMusic();
     startAlienContactSounds();
+    const previousPresses = Number(state.presses || 0);
     state.presses++;
-    const hasSixtySeven = String(state.presses).includes('67');
+    const hasSixtySeven = String(state.presses).includes('67') && !String(previousPresses).includes('67');
     recordDailyPress();
     updateGlobalPresses(1);
     // animations

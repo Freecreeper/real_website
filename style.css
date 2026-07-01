@@ -250,6 +250,8 @@ body.great-divide-intro{animation:dividePagePulse 3200ms ease both}
 .coconut-water-text{margin:2px 0 10px;padding:20px 24px;border-radius:8px;background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(124,242,255,.1));border:1px solid rgba(255,255,255,.16);font-size:34px;font-weight:900;color:#fff;text-transform:lowercase}
 .sixty-seven-card{text-align:center;align-items:center}
 .sixty-seven-number{width:132px;height:132px;border-radius:50%;display:grid;place-items:center;margin:4px auto 2px;background:radial-gradient(circle at 35% 25%,#fff 0 8%,#ffe66d 9% 20%,#ff5f7d 42%,#5b1234 100%);color:#fff;font-size:48px;font-weight:950;letter-spacing:0;box-shadow:0 0 34px rgba(255,95,125,.45),inset 0 -8px 22px rgba(0,0,0,.24);animation:sixtySevenPulse 900ms ease-in-out infinite}
+.sixty-seven-number span{display:block;font-size:32px;line-height:1}
+.sixty-seven-number strong{display:block;line-height:1}
 @keyframes sixtySevenPulse{50%{transform:scale(1.07) rotate(-2deg);filter:saturate(1.35)}}
 
 /* DVD logo used in DVD Mode */
